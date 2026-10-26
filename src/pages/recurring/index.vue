@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useProtectedPage, currentUser } from '@/services/auth'
 import {
@@ -24,6 +24,13 @@ const name = ref(''),
   category = ref('居家'),
   busy = ref(false)
 const categories = computed(() => categoryOptions(state.value, 'expense'))
+watch(
+  categories,
+  (items) => {
+    if (!items.includes(category.value)) category.value = items[0] || ''
+  },
+  { immediate: true },
+)
 const monthDays = Array.from({ length: 31 }, (_, i) => i + 1)
 const weekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
 const deleteTarget = ref<any>(null)
@@ -205,7 +212,7 @@ function record(rule: any) {
         <view class="input book">记账日期：每周{{ weekdays[day - 1].slice(2) }} ▾</view>
       </picker>
       <picker :range="categories" @change="category = categories[Number($event.detail.value)]">
-        <view class="input book">分类：{{ category }} ▾</view>
+        <view class="input book">分类：{{ category || '请先添加支出分类' }} ▾</view>
       </picker>
       <input v-model="note" class="input book" maxlength="100" placeholder="备注（选填）" />
       <button class="primary book" :loading="busy" :disabled="busy" @tap="save">

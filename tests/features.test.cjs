@@ -193,11 +193,27 @@ const { emptyState, normalizeState } = require('../cloudfunctions/ledger/core.cj
   const countBeforeDelete = (await entries(A)).length
   assert.equal((await mutate(C, 'deleteRule', { ruleId: rule.id })).code, 'VALIDATION')
   assert.equal((await mutate(A, 'deleteRule', { ruleId: rule.id })).ok, true)
-  assert.equal((await read(A)).rules.some(r => r.id === rule.id), false)
+  assert.equal(
+    (await read(A)).rules.some((r) => r.id === rule.id),
+    false,
+  )
   assert.equal((await entries(A)).length, countBeforeDelete)
-  assert.equal((await mutate(A, 'toggleRule', { ruleId: rule.id, active: true })).code, 'VALIDATION')
+  assert.equal(
+    (await mutate(A, 'toggleRule', { ruleId: rule.id, active: true })).code,
+    'VALIDATION',
+  )
   assert.equal((await mutate(A, 'save', { draft, ruleId: rule.id })).code, 'VALIDATION')
-  assert.equal((await mutate(A, 'save', { draft: { ...draft, note: '保留账单仍可编辑' }, ruleId: rule.id, id: first.result.id, expectedVersion: first.result.version })).ok, true)
+  assert.equal(
+    (
+      await mutate(A, 'save', {
+        draft: { ...draft, note: '保留账单仍可编辑' },
+        ruleId: rule.id,
+        id: first.result.id,
+        expectedVersion: first.result.version,
+      })
+    ).ok,
+    true,
+  )
   const doomed = (await mutate(A, 'createRule', { rule: ruleBase })).result
   assert.equal((await mutate(A, 'deleteRule', { ruleId: doomed.id })).ok, true)
   await features.runScheduled(now)
@@ -207,7 +223,10 @@ const { emptyState, normalizeState } = require('../cloudfunctions/ledger/core.cj
   await call(B, 'groupJoin', { code: invite.code })
   const groupRule = (await mutate(B, 'createRule', { rule: ruleBase }, g.groupId)).result
   const ownerRule = (await mutate(A, 'createRule', { rule: ruleBase }, g.groupId)).result
-  assert.equal((await mutate(B, 'deleteRule', { ruleId: ownerRule.id }, g.groupId)).code, 'FORBIDDEN')
+  assert.equal(
+    (await mutate(B, 'deleteRule', { ruleId: ownerRule.id }, g.groupId)).code,
+    'FORBIDDEN',
+  )
   assert.equal((await mutate(A, 'deleteRule', { ruleId: ownerRule.id }, g.groupId)).ok, true)
   const memberRule = (await mutate(B, 'createRule', { rule: ruleBase }, g.groupId)).result
   assert.equal((await mutate(A, 'deleteRule', { ruleId: memberRule.id }, g.groupId)).ok, true)
@@ -225,6 +244,56 @@ const { emptyState, normalizeState } = require('../cloudfunctions/ledger/core.cj
   const ci = (await entries(C))[0]
   assert.equal(ci.author.id, users.get(C).accountId)
   assert.equal(ci.ruleId, undefined)
+  // All legacy categories are mutable; history remains readable after rename/removal.
+  const activeRule = (await mutate(A, 'createRule', { rule: ruleBase })).result
+  const oldEntries = await entries(A)
+  assert.equal(
+    (await mutate(A, 'renameCategory', { kind: 'expense', name: '居家', newName: '家庭' })).ok,
+    true,
+  )
+  let settings = (await read(A)).settings
+  assert.ok(settings.categoryList.expense.includes('家庭'))
+  assert.ok(!settings.categoryList.expense.includes('居家'))
+  assert.equal(db.all().get('xq_books/' + activeRule.id).category, '家庭')
+  assert.deepEqual(await entries(A), oldEntries)
+  assert.equal((await mutate(A, 'save', { draft })).code, 'VALIDATION')
+  assert.equal(
+    (await mutate(A, 'renameCategory', { kind: 'expense', name: '家庭', newName: '交通' })).code,
+    'VALIDATION',
+  )
+  assert.equal((await mutate(A, 'removeCategory', { kind: 'expense', name: '家庭' })).ok, true)
+  assert.equal(db.all().get('xq_books/' + activeRule.id).active, false)
+  assert.equal(
+    (await mutate(A, 'toggleRule', { ruleId: activeRule.id, active: true })).code,
+    'VALIDATION',
+  )
+  const old = (await entries(A))[0]
+  assert.equal(
+    (
+      await mutate(A, 'save', {
+        id: old.id,
+        expectedVersion: old.version,
+        ruleId: old.ruleId,
+        draft: { ...old, note: '分类删除后编辑' },
+      })
+    ).ok,
+    true,
+  )
+  for (const name of (await read(A)).settings.categoryList.income)
+    assert.equal((await mutate(A, 'removeCategory', { kind: 'income', name })).ok, true)
+  assert.deepEqual((await read(A)).settings.categoryList.income, [])
+  await call(B, 'groupJoin', { code: invite.code })
+  assert.equal(
+    (
+      await mutate(
+        B,
+        'renameCategory',
+        { kind: 'expense', name: '居家', newName: '家庭' },
+        g.groupId,
+      )
+    ).code,
+    'FORBIDDEN',
+  )
   const fs = require('node:fs'),
     vm = require('node:vm')
   let runtimeContext = {},

@@ -182,6 +182,7 @@ function createHandler(db, services = {}) {
         'remove',
         'setBudget',
         'addCategory',
+        'renameCategory',
         'removeCategory',
         'setHidden',
         'importBatch',
@@ -208,7 +209,9 @@ function createHandler(db, services = {}) {
         const by = await features.author(owner, transaction)
         if (
           scope !== owner &&
-          ['setBudget', 'addCategory', 'removeCategory', 'importBatch'].includes(operation) &&
+          ['setBudget', 'addCategory', 'removeCategory', 'renameCategory', 'importBatch'].includes(
+            operation,
+          ) &&
           book.creator !== owner
         )
           fail('FORBIDDEN', '此操作仅群主可执行')
@@ -224,10 +227,6 @@ function createHandler(db, services = {}) {
         }
         try {
           if (operation === 'save') {
-            validate(args.draft, {
-              expense: categoryOptions(state, 'expense'),
-              income: categoryOptions(state, 'income'),
-            })
             if (args.id && (typeof args.id !== 'string' || args.id.length > 120))
               throw new Error('账单标识无效')
             if (args.createId && !/^[a-zA-Z0-9_-]{12,100}$/.test(args.createId))
@@ -248,6 +247,16 @@ function createHandler(db, services = {}) {
                 fail('CONFLICT', '该周期已有账单，请编辑已有记录')
             }
             const previous = await get(records.doc(ownId(scope, id)))
+            validate(args.draft, {
+              expense: [
+                ...categoryOptions(state, 'expense'),
+                ...(previous?.kind === 'expense' ? [previous.category] : []),
+              ],
+              income: [
+                ...categoryOptions(state, 'income'),
+                ...(previous?.kind === 'income' ? [previous.category] : []),
+              ],
+            })
             if (
               previous?.ruleId &&
               (previous.ruleId !== args.ruleId || previous.period !== linkedPeriod)
@@ -326,6 +335,8 @@ function createHandler(db, services = {}) {
               fail('VALIDATION', '定期项目无效')
             if (rule.creator !== owner && book.creator !== owner)
               fail('FORBIDDEN', '只能管理自己创建的定期项目')
+            if (args.active && !categoryOptions(state, 'expense').includes(rule.category))
+              fail('VALIDATION', '任务分类已删除，请重新创建任务并选择有效分类')
             rule.active = args.active
             if (rule.active && rule.nextDate < chinaDate()) {
               const reset = ruleInput(rule, state, chinaDate())
@@ -339,10 +350,20 @@ function createHandler(db, services = {}) {
             let added = 0,
               skipped = 0,
               conflicts = 0
-            for (const kind of ['expense', 'income'])
-              state.customCategories[kind] = Array.from(
-                new Set([...state.customCategories[kind], ...imported.customCategories[kind]]),
-              )
+            state.categoryList = {
+              expense: Array.from(
+                new Set([
+                  ...categoryOptions(state, 'expense'),
+                  ...categoryOptions(imported, 'expense'),
+                ]),
+              ),
+              income: Array.from(
+                new Set([
+                  ...categoryOptions(state, 'income'),
+                  ...categoryOptions(imported, 'income'),
+                ]),
+              ),
+            }
             for (const [month, budget] of Object.entries(imported.budgets))
               if (!state.budgets[month]) state.budgets[month] = budget
             for (const entry of imported.entries) {
@@ -368,18 +389,19 @@ function createHandler(db, services = {}) {
               write: (value) => (raw = value),
             })
             if (operation === 'setBudget') repository.setBudget(args.month, args.budget)
-            if (operation === 'addCategory' || operation === 'removeCategory') {
+            if (['addCategory', 'removeCategory', 'renameCategory'].includes(operation)) {
               if (!['expense', 'income'].includes(args.kind)) throw new Error('收支类型无效')
-              if (operation === 'removeCategory' && book.usage[hash(args.kind + ':' + args.name)])
-                throw new Error('分类已被账单使用，不能删除')
-              if (operation === 'removeCategory') {
+              repository[operation](args.kind, args.name, args.newName)
+              if (args.kind === 'expense' && operation !== 'addCategory') {
                 for (const ruleId of book.ruleIds || []) {
                   const rule = await get(books.doc(ruleId))
-                  if (rule?.category === args.name)
-                    fail('VALIDATION', '分类被定期项目使用，不能删除')
+                  if (rule?.category === args.name) {
+                    if (operation === 'renameCategory') rule.category = args.newName.trim()
+                    else rule.active = false
+                    writes.push(() => books.doc(ruleId).set({ data: rule }))
+                  }
                 }
               }
-              repository[operation](args.kind, args.name)
             }
             if (operation === 'setHidden') {
               if (typeof args.value !== 'boolean') throw new Error('设置无效')

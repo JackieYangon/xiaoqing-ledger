@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useProtectedPage } from '@/services/auth'
 const { authenticated, currentUserLabel } = useProtectedPage()
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { categoryOptions, today, money, calculateMoney, type Kind } from '@/core/ledger'
 import {
@@ -43,7 +43,16 @@ const id = ref(''),
   note = ref(''),
   busy = ref(false),
   invalid = ref(false)
-const options = computed(() => categoryOptions(state.value, kind.value))
+const options = computed(() => {
+  const active = categoryOptions(state.value, kind.value)
+  const previous = entries.value.find((e) => e.id === id.value)
+  return previous?.kind === kind.value && !active.includes(previous.category)
+    ? [...active, previous.category]
+    : active
+})
+watch(options, (items) => {
+  if (!items.includes(category.value)) category.value = items[0] || ''
+})
 const suggestions = computed(() =>
   Array.from(
     new Set(
@@ -95,7 +104,7 @@ onLoad(async (args) => {
 })
 function changeKind(value: Kind) {
   kind.value = value
-  category.value = categoryOptions(state.value, value)[0]
+  category.value = categoryOptions(state.value, value)[0] || ''
 }
 function changeDate(e: any) {
   date.value = e.detail.value
@@ -197,7 +206,12 @@ function remove() {
           收入
         </view>
       </view>
-      <picker v-if="availableRules.length || ruleId" :range="ruleNames" :disabled="!!id" @change="selectRule">
+      <picker
+        v-if="availableRules.length || ruleId"
+        :range="ruleNames"
+        :disabled="!!id"
+        @change="selectRule"
+      >
         <view class="badge" style="margin-top: 20rpx">
           关联项目：{{
             availableRules.find((r) => r.id === ruleId)?.name ||
@@ -211,6 +225,7 @@ function remove() {
           <text class="label">选择分类</text>
           <button class="text-btn" @tap="navigate('categories')">管理 ›</button>
         </view>
+        <view v-if="!options.length" class="muted">暂无分类，请点击“管理”添加分类后记账。</view>
         <scroll-view scroll-y class="category-scroll">
           <view class="category-grid">
             <view

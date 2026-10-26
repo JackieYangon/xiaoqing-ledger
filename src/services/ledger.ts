@@ -207,6 +207,10 @@ export const repository = {
     write('remove', { id, version }, () => localRepository.remove(id, version)),
   setBudget: (month: string, budget: Budget) =>
     write('setBudget', { month, budget }, () => localRepository.setBudget(month, budget)),
+  renameCategory: (kind: Kind, name: string, newName: string) =>
+    write('renameCategory', { kind, name, newName }, () =>
+      localRepository.renameCategory(kind, name, newName),
+    ),
   addCategory: (kind: Kind, name: string) =>
     write('addCategory', { kind, name }, () => localRepository.addCategory(kind, name)),
   removeCategory: (kind: Kind, name: string) =>

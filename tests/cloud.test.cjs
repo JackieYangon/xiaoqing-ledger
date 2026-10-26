@@ -154,14 +154,12 @@ function memoryStorage() {
   assert.equal((await mutate('addCategory', { kind: 'expense', name: '咖啡' })).ok, true)
   const coffee = await mutate('save', { draft: { ...draft, category: '咖啡' } })
   assert.equal(coffee.ok, true)
-  assert.equal(
-    (await mutate('removeCategory', { kind: 'expense', name: '咖啡' })).code,
-    'VALIDATION',
-  )
+  assert.equal((await mutate('removeCategory', { kind: 'expense', name: '咖啡' })).ok, true)
   assert.equal(
     (await mutate('remove', { id: coffee.result.id, version: coffee.result.version })).ok,
     true,
   )
+  assert.equal((await mutate('addCategory', { kind: 'expense', name: '咖啡' })).ok, true)
   assert.equal((await mutate('removeCategory', { kind: 'expense', name: '咖啡' })).ok, true)
   const stateBefore = await meta()
   db.setFail(true)

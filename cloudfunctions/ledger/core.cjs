@@ -78,7 +78,9 @@ function monthDays(month) {
 }
 exports.monthDays = monthDays;
 function categoryOptions(state, kind) {
-    return [...exports.categories[kind], ...state.customCategories[kind]];
+    return state.categoryList
+        ? [...state.categoryList[kind]]
+        : [...exports.categories[kind], ...state.customCategories[kind]];
 }
 exports.categoryOptions = categoryOptions;
 function validName(name) {
@@ -179,6 +181,18 @@ function decode(value) {
                 throw new Error('分类格式错误');
             state.customCategories[kind] = [...items];
         }
+        if (value.categoryList !== undefined) {
+            state.categoryList = { expense: [], income: [] };
+            for (const kind of ['expense', 'income']) {
+                const items = value.categoryList?.[kind];
+                if (!Array.isArray(items) ||
+                    items.length > 50 ||
+                    items.some((n) => !validName(n)) ||
+                    new Set(items).size !== items.length)
+                    throw new Error('分类格式错误');
+                state.categoryList[kind] = [...items];
+            }
+        }
         state.hideAmounts = value.hideAmounts;
         for (const [month, b] of Object.entries(value.budgets)) {
             if (!validMonth(month) ||
@@ -192,7 +206,7 @@ function decode(value) {
                 throw new Error('预算格式错误');
             const limits = {};
             for (const [name, limit] of Object.entries(b.categories)) {
-                if (!categoryOptions(state, 'expense').includes(name) ||
+                if (!validName(name) ||
                     !Number.isSafeInteger(limit) ||
                     Number(limit) <= 0 ||
                     Number(limit) > exports.MAX_CENTS)
@@ -208,7 +222,9 @@ function decode(value) {
     };
     const ids = new Set();
     for (const e of value.entries) {
-        validate(e, available);
+        if (!validName(e.category))
+            throw new Error('分类格式错误');
+        validate(e, { expense: [e.category], income: [e.category] });
         if (typeof e.id !== 'string' ||
             !e.id ||
             e.id.length > 120 ||
@@ -320,8 +336,10 @@ function createRepository(storage) {
                 added++;
             }
         }
-        for (const kind of ['expense', 'income'])
-            state.customCategories[kind] = Array.from(new Set([...state.customCategories[kind], ...incoming.customCategories[kind]]));
+        state.categoryList = {
+            expense: Array.from(new Set([...categoryOptions(state, 'expense'), ...categoryOptions(incoming, 'expense')])),
+            income: Array.from(new Set([...categoryOptions(state, 'income'), ...categoryOptions(incoming, 'income')])),
+        };
         for (const [month, budget] of Object.entries(incoming.budgets)) {
             if (!state.budgets[month])
                 state.budgets[month] = budget;
@@ -334,11 +352,17 @@ function createRepository(storage) {
         list: () => read().entries,
         save(draft, id, expectedVersion) {
             const state = read();
-            validate(draft, {
-                expense: categoryOptions(state, 'expense'),
-                income: categoryOptions(state, 'income'),
-            });
             const previous = id ? state.entries.find((e) => e.id === id) : undefined;
+            validate(draft, {
+                expense: [
+                    ...categoryOptions(state, 'expense'),
+                    ...(previous?.kind === 'expense' ? [previous.category] : []),
+                ],
+                income: [
+                    ...categoryOptions(state, 'income'),
+                    ...(previous?.kind === 'income' ? [previous.category] : []),
+                ],
+            });
             if (id && !previous)
                 throw new Error('该账单已不存在');
             if (previous && previous.version !== expectedVersion)
@@ -376,17 +400,39 @@ function createRepository(storage) {
                 throw new Error('分类名称需为 1–12 个字');
             if (categoryOptions(state, kind).includes(name))
                 throw new Error('该分类已存在');
-            state.customCategories[kind].push(name);
+            state.categoryList = {
+                expense: categoryOptions(state, 'expense'),
+                income: categoryOptions(state, 'income'),
+            };
+            state.categoryList[kind].push(name);
             persist(state);
         },
         removeCategory(kind, name) {
             const state = read();
-            if (!state.customCategories[kind].includes(name))
-                throw new Error('默认分类不能删除');
-            if (state.entries.some((e) => e.kind === kind && e.category === name) ||
-                (kind === 'expense' && Object.values(state.budgets).some((b) => b.categories[name])))
-                throw new Error('分类已被账单或预算使用，请保留以便查询历史');
-            state.customCategories[kind] = state.customCategories[kind].filter((n) => n !== name);
+            if (!categoryOptions(state, kind).includes(name))
+                throw new Error('分类已不存在');
+            state.categoryList = {
+                expense: categoryOptions(state, 'expense'),
+                income: categoryOptions(state, 'income'),
+            };
+            state.categoryList[kind] = state.categoryList[kind].filter((n) => n !== name);
+            persist(state);
+        },
+        renameCategory(kind, name, newName) {
+            const state = read();
+            newName = newName.trim();
+            if (!validName(newName))
+                throw new Error('分类名称需为 1–12 个字');
+            const options = categoryOptions(state, kind);
+            if (!options.includes(name))
+                throw new Error('分类已不存在');
+            if (name !== newName && options.includes(newName))
+                throw new Error('该分类已存在');
+            state.categoryList = {
+                expense: categoryOptions(state, 'expense'),
+                income: categoryOptions(state, 'income'),
+            };
+            state.categoryList[kind] = options.map((n) => (n === name ? newName : n));
             persist(state);
         },
         setHidden(value) {

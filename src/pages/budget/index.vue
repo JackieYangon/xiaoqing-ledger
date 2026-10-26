@@ -27,7 +27,14 @@ const month = ref(today().slice(0, 7)),
   totalInput = ref(''),
   limits = ref<Record<string, string>>({}),
   busy = ref(false)
-const categories = computed(() => categoryOptions(state.value, 'expense'))
+const categories = computed(() =>
+  Array.from(
+    new Set([
+      ...categoryOptions(state.value, 'expense'),
+      ...Object.keys(state.value.budgets[month.value]?.categories || {}),
+    ]),
+  ),
+)
 const spending = computed(() => summarize(inMonth(entries.value, month.value)).expense)
 const saved = computed(() => state.value.budgets[month.value])
 const progress = computed(() => budgetProgress(saved.value?.total || 0, spending.value))

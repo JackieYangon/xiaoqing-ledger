@@ -90,7 +90,7 @@ function restore() {
       <view v-if="loadError" class="error">{{ loadError }}</view>
       <view class="card">
         <view class="section heading">完整备份 · JSON</view>
-        <view class="muted">包含全部账单、自定义分类和预算。复制后粘贴到文本文件保存。</view>
+        <view class="muted">包含全部账单、分类和预算。复制后粘贴到文本文件保存。</view>
         <button class="primary action" @tap="backup">复制完整备份</button>
       </view>
       <view class="card">

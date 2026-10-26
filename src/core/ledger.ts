@@ -21,6 +21,7 @@ export interface Budget {
 export interface LedgerState {
   schema: 2
   entries: Entry[]
+  categoryList?: Record<Kind, string[]>
   customCategories: Record<Kind, string[]>
   budgets: Record<string, Budget>
   hideAmounts: boolean
@@ -88,7 +89,9 @@ export function monthDays(month: string) {
   return new Date(Date.UTC(year, m, 0)).getUTCDate()
 }
 export function categoryOptions(state: LedgerState, kind: Kind) {
-  return [...categories[kind], ...state.customCategories[kind]]
+  return state.categoryList
+    ? [...state.categoryList[kind]]
+    : [...categories[kind], ...state.customCategories[kind]]
 }
 function validName(name: unknown): name is string {
   return (
@@ -187,6 +190,20 @@ function decode(value: any): LedgerState {
         throw new Error('分类格式错误')
       state.customCategories[kind] = [...items]
     }
+    if (value.categoryList !== undefined) {
+      state.categoryList = { expense: [], income: [] }
+      for (const kind of ['expense', 'income'] as Kind[]) {
+        const items = value.categoryList?.[kind]
+        if (
+          !Array.isArray(items) ||
+          items.length > 50 ||
+          items.some((n: unknown) => !validName(n)) ||
+          new Set(items).size !== items.length
+        )
+          throw new Error('分类格式错误')
+        state.categoryList[kind] = [...items]
+      }
+    }
     state.hideAmounts = value.hideAmounts
     for (const [month, b] of Object.entries(value.budgets) as [string, any][]) {
       if (
@@ -203,7 +220,7 @@ function decode(value: any): LedgerState {
       const limits: Record<string, number> = {}
       for (const [name, limit] of Object.entries(b.categories)) {
         if (
-          !categoryOptions(state, 'expense').includes(name) ||
+          !validName(name) ||
           !Number.isSafeInteger(limit) ||
           Number(limit) <= 0 ||
           Number(limit) > MAX_CENTS
@@ -220,7 +237,8 @@ function decode(value: any): LedgerState {
   }
   const ids = new Set<string>()
   for (const e of value.entries) {
-    validate(e, available)
+    if (!validName(e.category)) throw new Error('分类格式错误')
+    validate(e, { expense: [e.category], income: [e.category] })
     if (
       typeof e.id !== 'string' ||
       !e.id ||
@@ -341,10 +359,14 @@ export function createRepository(storage: Storage) {
         added++
       }
     }
-    for (const kind of ['expense', 'income'] as Kind[])
-      state.customCategories[kind] = Array.from(
-        new Set([...state.customCategories[kind], ...incoming.customCategories[kind]]),
-      )
+    state.categoryList = {
+      expense: Array.from(
+        new Set([...categoryOptions(state, 'expense'), ...categoryOptions(incoming, 'expense')]),
+      ),
+      income: Array.from(
+        new Set([...categoryOptions(state, 'income'), ...categoryOptions(incoming, 'income')]),
+      ),
+    }
     for (const [month, budget] of Object.entries(incoming.budgets)) {
       if (!state.budgets[month]) state.budgets[month] = budget
     }
@@ -356,11 +378,17 @@ export function createRepository(storage: Storage) {
     list: () => read().entries,
     save(draft: Draft, id?: string, expectedVersion?: number) {
       const state = read()
-      validate(draft, {
-        expense: categoryOptions(state, 'expense'),
-        income: categoryOptions(state, 'income'),
-      })
       const previous = id ? state.entries.find((e) => e.id === id) : undefined
+      validate(draft, {
+        expense: [
+          ...categoryOptions(state, 'expense'),
+          ...(previous?.kind === 'expense' ? [previous.category] : []),
+        ],
+        income: [
+          ...categoryOptions(state, 'income'),
+          ...(previous?.kind === 'income' ? [previous.category] : []),
+        ],
+      })
       if (id && !previous) throw new Error('该账单已不存在')
       if (previous && previous.version !== expectedVersion)
         throw new Error('账单已发生变化，请返回重新打开')
@@ -393,18 +421,35 @@ export function createRepository(storage: Storage) {
       name = name.trim()
       if (!validName(name)) throw new Error('分类名称需为 1–12 个字')
       if (categoryOptions(state, kind).includes(name)) throw new Error('该分类已存在')
-      state.customCategories[kind].push(name)
+      state.categoryList = {
+        expense: categoryOptions(state, 'expense'),
+        income: categoryOptions(state, 'income'),
+      }
+      state.categoryList[kind].push(name)
       persist(state)
     },
     removeCategory(kind: Kind, name: string) {
       const state = read()
-      if (!state.customCategories[kind].includes(name)) throw new Error('默认分类不能删除')
-      if (
-        state.entries.some((e) => e.kind === kind && e.category === name) ||
-        (kind === 'expense' && Object.values(state.budgets).some((b) => b.categories[name]))
-      )
-        throw new Error('分类已被账单或预算使用，请保留以便查询历史')
-      state.customCategories[kind] = state.customCategories[kind].filter((n) => n !== name)
+      if (!categoryOptions(state, kind).includes(name)) throw new Error('分类已不存在')
+      state.categoryList = {
+        expense: categoryOptions(state, 'expense'),
+        income: categoryOptions(state, 'income'),
+      }
+      state.categoryList[kind] = state.categoryList[kind].filter((n) => n !== name)
+      persist(state)
+    },
+    renameCategory(kind: Kind, name: string, newName: string) {
+      const state = read()
+      newName = newName.trim()
+      if (!validName(newName)) throw new Error('分类名称需为 1–12 个字')
+      const options = categoryOptions(state, kind)
+      if (!options.includes(name)) throw new Error('分类已不存在')
+      if (name !== newName && options.includes(newName)) throw new Error('该分类已存在')
+      state.categoryList = {
+        expense: categoryOptions(state, 'expense'),
+        income: categoryOptions(state, 'income'),
+      }
+      state.categoryList[kind] = options.map((n) => (n === name ? newName : n))
       persist(state)
     },
     setHidden(value: boolean) {
