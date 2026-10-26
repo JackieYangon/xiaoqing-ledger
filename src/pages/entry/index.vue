@@ -197,9 +197,13 @@ function remove() {
           收入
         </view>
       </view>
-      <picker v-if="availableRules.length" :range="ruleNames" :disabled="!!id" @change="selectRule">
+      <picker v-if="availableRules.length || ruleId" :range="ruleNames" :disabled="!!id" @change="selectRule">
         <view class="badge" style="margin-top: 20rpx">
-          关联项目：{{ availableRules.find((r) => r.id === ruleId)?.name || '不关联' }} ▾
+          关联项目：{{
+            availableRules.find((r) => r.id === ruleId)?.name ||
+            (ruleId ? '已删除的定期项目' : '不关联')
+          }}
+          ▾
         </view>
       </picker>
       <view class="card">

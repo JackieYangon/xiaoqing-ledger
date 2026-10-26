@@ -217,6 +217,7 @@ export const repository = {
     cloudEnabled ? snapshotRepository().exportBackup() : localRepository.exportBackup(),
   previewImport: (text: string) =>
     cloudEnabled ? snapshotRepository().previewImport(text) : localRepository.previewImport(text),
+  deleteRule: (ruleId: string) => write('deleteRule', { ruleId }, () => {}),
   createRule: (rule: any) => write('createRule', { rule }, () => {}),
   toggleRule: (ruleId: string, active: boolean) =>
     write('toggleRule', { ruleId, active }, () => {}),

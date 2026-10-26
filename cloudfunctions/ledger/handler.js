@@ -31,9 +31,9 @@ function defaultBook() {
 async function get(doc) {
   try {
     const result = await doc.get()
-    const value=Array.isArray(result.data) ? result.data[0] : result.data
-    if(!value)return value
-    const {_id,...data}=value
+    const value = Array.isArray(result.data) ? result.data[0] : result.data
+    if (!value) return value
+    const { _id, ...data } = value
     return data
   } catch (e) {
     if (
@@ -187,6 +187,7 @@ function createHandler(db, services = {}) {
         'importBatch',
         'createRule',
         'toggleRule',
+        'deleteRule',
       ]
       if (!allowed.includes(operation)) fail('VALIDATION', '不支持的写入操作')
       if (Buffer.byteLength(JSON.stringify(event), 'utf8') > 700000)
@@ -307,9 +308,21 @@ function createHandler(db, services = {}) {
             const rule = { ...input, type: 'rule', scope, creator: owner, id: ruleId }
             writes.push(() => books.doc(ruleId).set({ data: rule }))
             resultData = rule
+          } else if (operation === 'deleteRule') {
+            if (typeof args.ruleId !== 'string' || !/^rule_[a-f0-9]{32}$/.test(args.ruleId))
+              fail('VALIDATION', '定期项目无效')
+            const rule = await get(books.doc(args.ruleId))
+            if (!rule || rule.scope !== scope) fail('VALIDATION', '定期项目无效')
+            if (rule.creator !== owner && book.creator !== owner)
+              fail('FORBIDDEN', '只能管理自己创建的定期项目')
+            // Keep a disabled tombstone so existing linked bills remain editable.
+            rule.active = false
+            rule.deleted = true
+            book.ruleIds = (book.ruleIds || []).filter((id) => id !== args.ruleId)
+            writes.push(() => books.doc(args.ruleId).set({ data: rule }))
           } else if (operation === 'toggleRule') {
             const rule = await get(books.doc(args.ruleId))
-            if (!rule || rule.scope !== scope || typeof args.active !== 'boolean')
+            if (!rule || rule.deleted || rule.scope !== scope || typeof args.active !== 'boolean')
               fail('VALIDATION', '定期项目无效')
             if (rule.creator !== owner && book.creator !== owner)
               fail('FORBIDDEN', '只能管理自己创建的定期项目')

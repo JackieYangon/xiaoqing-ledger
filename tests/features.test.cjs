@@ -189,9 +189,28 @@ const { emptyState, normalizeState } = require('../cloudfunctions/ledger/core.cj
   await features.runScheduled(now)
   assert.equal((await entries(A)).length, 1)
   assert.equal((await mutate(A, 'save', { draft, ruleId: pauseRule.id })).code, 'VALIDATION')
+  // Deleting a rule preserves bills, prevents future runs and cannot be reversed by toggle.
+  const countBeforeDelete = (await entries(A)).length
+  assert.equal((await mutate(C, 'deleteRule', { ruleId: rule.id })).code, 'VALIDATION')
+  assert.equal((await mutate(A, 'deleteRule', { ruleId: rule.id })).ok, true)
+  assert.equal((await read(A)).rules.some(r => r.id === rule.id), false)
+  assert.equal((await entries(A)).length, countBeforeDelete)
+  assert.equal((await mutate(A, 'toggleRule', { ruleId: rule.id, active: true })).code, 'VALIDATION')
+  assert.equal((await mutate(A, 'save', { draft, ruleId: rule.id })).code, 'VALIDATION')
+  assert.equal((await mutate(A, 'save', { draft: { ...draft, note: '保留账单仍可编辑' }, ruleId: rule.id, id: first.result.id, expectedVersion: first.result.version })).ok, true)
+  const doomed = (await mutate(A, 'createRule', { rule: ruleBase })).result
+  assert.equal((await mutate(A, 'deleteRule', { ruleId: doomed.id })).ok, true)
+  await features.runScheduled(now)
+  assert.equal((await entries(A)).length, countBeforeDelete)
+  assert.equal((await mutate(A, 'deleteRule', { ruleId: doomed.id })).ok, true)
   // A member leaving disables their automatic group bill on the next timer tick.
   await call(B, 'groupJoin', { code: invite.code })
   const groupRule = (await mutate(B, 'createRule', { rule: ruleBase }, g.groupId)).result
+  const ownerRule = (await mutate(A, 'createRule', { rule: ruleBase }, g.groupId)).result
+  assert.equal((await mutate(B, 'deleteRule', { ruleId: ownerRule.id }, g.groupId)).code, 'FORBIDDEN')
+  assert.equal((await mutate(A, 'deleteRule', { ruleId: ownerRule.id }, g.groupId)).ok, true)
+  const memberRule = (await mutate(B, 'createRule', { rule: ruleBase }, g.groupId)).result
+  assert.equal((await mutate(A, 'deleteRule', { ruleId: memberRule.id }, g.groupId)).ok, true)
   await call(B, 'groupLeave', { groupId: g.groupId })
   await features.runScheduled(now)
   assert.equal(db.all().get('xq_books/' + groupRule.id).active, false)

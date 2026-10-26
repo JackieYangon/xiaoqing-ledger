@@ -14,7 +14,7 @@ import {
   refreshWorkspace,
   schedulerStatus,
 } from '@/services/ledger'
-import { categoryOptions, parseMoney, money, today } from '@/core/ledger'
+import { categoryOptions, parseMoney, money } from '@/core/ledger'
 const { authenticated } = useProtectedPage()
 const name = ref(''),
   amount = ref(''),
@@ -24,11 +24,21 @@ const name = ref(''),
   category = ref('居家'),
   busy = ref(false)
 const categories = computed(() => categoryOptions(state.value, 'expense'))
-const selectedDate = ref(today().slice(0, 7) + '-01')
+const monthDays = Array.from({ length: 31 }, (_, i) => i + 1)
 const weekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
-function changeDate(e: any) {
-  selectedDate.value = e.detail.value
-  day.value = Number(selectedDate.value.slice(-2))
+const deleteTarget = ref<any>(null)
+async function removeRule() {
+  if (busy.value || !deleteTarget.value) return
+  busy.value = true
+  try {
+    await repository.deleteRule(deleteTarget.value.id)
+    deleteTarget.value = null
+    uni.showToast({ title: '定期任务已删除', icon: 'none' })
+  } catch (e) {
+    toastError(e)
+  } finally {
+    busy.value = false
+  }
 }
 onShow(async () => {
   if (!authenticated.value) return
@@ -41,7 +51,7 @@ onShow(async () => {
 })
 function changeFrequency(e: any) {
   frequency.value = Number(e.detail.value) === 0 ? 'monthly' : 'weekly'
-  day.value = frequency.value === 'monthly' ? Number(selectedDate.value.slice(-2)) : 1
+  day.value = 1
 }
 async function save() {
   if (busy.value) return
@@ -138,6 +148,24 @@ function record(rule: any) {
       >
         {{ rule.active ? '暂停自动记账' : '恢复自动记账' }}
       </button>
+      <button
+        v-if="rule.creator === currentUser?.accountId || canManageBook"
+        class="text-btn delete-rule book"
+        :disabled="busy"
+        @tap="deleteTarget = rule"
+      >
+        删除定期任务
+      </button>
+    </view>
+    <view v-if="deleteTarget" class="card delete-confirm">
+      <view class="section heading">删除“{{ deleteTarget.name }}”？</view>
+      <view class="muted">删除后不再自动记账，已经生成的账单会保留。此操作不能撤销。</view>
+      <view class="row book">
+        <button class="secondary" :disabled="busy" @tap="deleteTarget = null">取消</button>
+        <button class="danger confirm-delete" :disabled="busy" :loading="busy" @tap="removeRule">
+          确认删除
+        </button>
+      </view>
     </view>
     <view class="card">
       <view class="section heading">新增定期项目</view>
@@ -151,9 +179,23 @@ function record(rule: any) {
       <picker :range="['每月', '每周']" @change="changeFrequency">
         <view class="input book">周期：{{ frequency === 'monthly' ? '每月' : '每周' }} ▾</view>
       </picker>
-      <picker v-if="frequency === 'monthly'" mode="date" :value="selectedDate" @change="changeDate">
-        <view class="input book">记账日期：每月 {{ day }} 日 ▾</view>
-      </picker>
+      <view v-if="frequency === 'monthly'" class="book">
+        <view class="label">记账日期：每月 {{ day }} 日</view>
+        <view class="date-grid">
+          <button
+            v-for="d in monthDays"
+            :key="d"
+            class="date-cell"
+            :class="{ selected: day === d }"
+            :disabled="busy"
+            :aria-label="'每月' + d + '日'"
+            @tap="day = d"
+          >
+            {{ d }}
+          </button>
+        </view>
+        <view class="muted small notice">直接选择每月几号记账；29–31 日遇短月份按月底执行。</view>
+      </view>
       <picker
         v-else
         :range="weekdays"
@@ -162,9 +204,6 @@ function record(rule: any) {
       >
         <view class="input book">记账日期：每周{{ weekdays[day - 1].slice(2) }} ▾</view>
       </picker>
-      <view v-if="frequency === 'monthly'" class="muted small notice">
-        点击选择日期，按所选日期的“几号”每月重复，年月不作为开始日期；短月份自动取月底。
-      </view>
       <picker :range="categories" @change="category = categories[Number($event.detail.value)]">
         <view class="input book">分类：{{ category }} ▾</view>
       </picker>
@@ -182,5 +221,33 @@ function record(rule: any) {
 .book,
 .notice {
   margin-top: 20rpx;
+}
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12rpx;
+}
+.date-cell {
+  padding: 0;
+  width: 100%;
+  line-height: 72rpx;
+  height: 72rpx;
+  border-radius: 14rpx;
+  background: #f1f5ee;
+  color: #3c5849;
+}
+.date-cell.selected {
+  background: #267858;
+  color: white;
+  font-weight: 700;
+}
+.delete-rule {
+  color: #ad493e;
+}
+.delete-confirm {
+  border-color: #e6b7ac;
+}
+.confirm-delete {
+  margin-top: 0;
 }
 </style>
