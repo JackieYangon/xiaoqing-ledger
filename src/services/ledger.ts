@@ -1,4 +1,12 @@
-import { assertLoggedIn, requireLogin, onSessionReset, authenticatedCall, currentUser } from './auth'
+import {
+  assertLoggedIn,
+  requireLogin,
+  onSessionReset,
+  authenticatedCall,
+  currentUser,
+  updateProfile,
+  onForegroundCheck,
+} from './auth'
 import { computed, ref } from 'vue'
 import {
   createRepository,
@@ -14,18 +22,38 @@ import { CLOUD_ENV } from '@/config/cloud'
 export { cloudEnabled }
 const KEY = 'xiaoqing.ledger.v1'
 export const localRepository = createRepository({
-  read: () => { assertLoggedIn(); return uni.getStorageSync(KEY) },
-  write: (value) => { assertLoggedIn(); uni.setStorageSync(KEY, value) },
-})
-const makeClient = () => createCloudClient(
-  authenticatedCall,
-  {
-    get: (key) => uni.getStorageSync(key),
-    set: (key, value) => uni.setStorageSync(key, value),
-    remove: (key) => uni.removeStorageSync(key),
+  read: () => {
+    assertLoggedIn()
+    return uni.getStorageSync(KEY)
   },
-  CLOUD_ENV,
+  write: (value) => {
+    assertLoggedIn()
+    uni.setStorageSync(KEY, value)
+  },
+})
+export const schedulerStatus = ref<{ lastRun: string; healthy: boolean } | null>(null)
+export const currentBookId = ref('')
+export const currentBookName = ref('个人账本')
+export const groups = ref<Array<{ id: string; name: string; creator: string; size: number }>>([])
+export const rules = ref<any[]>([])
+export const isGroup = computed(() => !!currentBookId.value)
+export const canManageBook = computed(
+  () =>
+    !isGroup.value ||
+    groups.value.find((g) => g.id === currentBookId.value)?.creator ===
+      currentUser.value?.accountId,
 )
+const makeClient = () =>
+  createCloudClient(
+    authenticatedCall,
+    {
+      get: (key) => uni.getStorageSync(key),
+      set: (key, value) => uni.setStorageSync(key, value),
+      remove: (key) => uni.removeStorageSync(key),
+    },
+    CLOUD_ENV,
+    currentBookId.value,
+  )
 let client = makeClient()
 export const state = ref(emptyState()),
   entries = computed(() => state.value.entries),
@@ -52,12 +80,29 @@ export const saveMessage = computed(() => (cloudEnabled ? '已保存到云端' :
 export const recordFilter = ref<{ month: string; kind: Kind; category: string } | null>(null)
 let refreshTask: Promise<boolean> | null = null
 onSessionReset(() => {
+  currentBookId.value = ''
+  currentBookName.value = '个人账本'
+  groups.value = []
+  rules.value = []
   client = makeClient()
   state.value = emptyState()
-  accountId.value = ''; lastSync.value = ''; loadError.value = ''
-  pendingOperation.value = false; canDiscardPending.value = false
-  syncBusy.value = false; syncStatus.value = 'connecting'
-  recordFilter.value = null; refreshTask = null
+  accountId.value = ''
+  lastSync.value = ''
+  loadError.value = ''
+  pendingOperation.value = false
+  canDiscardPending.value = false
+  syncBusy.value = false
+  syncStatus.value = 'connecting'
+  recordFilter.value = null
+  refreshTask = null
+})
+onForegroundCheck(async (ready) => {
+  if (!ready) {
+    state.value = emptyState()
+    rules.value = []
+    return
+  }
+  await refresh()
 })
 function capturePending() {
   canDiscardPending.value = client.canDiscard()
@@ -76,8 +121,11 @@ function snapshotRepository() {
 async function fetchCloud() {
   const activeClient = client
   const snapshot = await activeClient.load()
-  if (client !== activeClient || snapshot.accountId !== currentUser.value?.accountId) throw new Error('登录状态已变化')
+  if (client !== activeClient || snapshot.accountId !== currentUser.value?.accountId)
+    throw new Error('登录状态已变化')
   state.value = snapshot.state
+  rules.value = snapshot.rules || []
+  currentBookName.value = snapshot.bookName || '个人账本'
   accountId.value = snapshot.accountId
   loadError.value = ''
   syncStatus.value = 'synced'
@@ -135,7 +183,8 @@ async function write(operation: string, args: any, local: () => any) {
     try {
       await fetchCloud()
     } catch (e) {
-      if (client === activeClient) report(new Error('云端已保存，但刷新失败。请同步确认后继续：' + errorMessage(e)))
+      if (client === activeClient)
+        report(new Error('云端已保存，但刷新失败。请同步确认后继续：' + errorMessage(e)))
     }
     return result
   } catch (e) {
@@ -148,9 +197,11 @@ async function write(operation: string, args: any, local: () => any) {
 export const repository = {
   read: () => (cloudEnabled ? snapshotRepository().read() : localRepository.read()),
   list: () => (cloudEnabled ? snapshotRepository().list() : localRepository.list()),
-  save: (draft: Draft, id?: string, expectedVersion?: number, createId?: string) =>
-    write('save', { draft, ...(id ? { id, expectedVersion } : { createId }) }, () =>
-      localRepository.save(draft, id, expectedVersion),
+  save: (draft: Draft, id?: string, expectedVersion?: number, createId?: string, ruleId?: string) =>
+    write(
+      'save',
+      { draft, ...(ruleId ? { ruleId } : {}), ...(id ? { id, expectedVersion } : { createId }) },
+      () => localRepository.save(draft, id, expectedVersion),
     ),
   remove: (id: string, version: number) =>
     write('remove', { id, version }, () => localRepository.remove(id, version)),
@@ -166,15 +217,19 @@ export const repository = {
     cloudEnabled ? snapshotRepository().exportBackup() : localRepository.exportBackup(),
   previewImport: (text: string) =>
     cloudEnabled ? snapshotRepository().previewImport(text) : localRepository.previewImport(text),
+  createRule: (rule: any) => write('createRule', { rule }, () => {}),
+  toggleRule: (ruleId: string, active: boolean) =>
+    write('toggleRule', { ruleId, active }, () => {}),
   async importBackup(text: string) {
     assertLoggedIn()
     if (!cloudEnabled) return write('unused', {}, () => localRepository.importBackup(text))
     const source = parseBackup(text),
       totals = { added: 0, skipped: 0, conflicts: 0 }
     const migrationAccount = client.getAccountId()
+    const migrationBook = currentBookId.value
     for (let i = 0; i < Math.max(1, source.entries.length); i += 20) {
-      if (client.getAccountId() !== migrationAccount)
-        throw new Error('微信身份发生变化，迁移已暂停')
+      if (client.getAccountId() !== migrationAccount || currentBookId.value !== migrationBook)
+        throw new Error('微信身份或目标账本发生变化，导入已暂停')
       const batch = { ...source, entries: source.entries.slice(i, i + 20) }
       try {
         const result = await write('importBatch', { text: JSON.stringify(batch) }, () => {})
@@ -227,4 +282,55 @@ export function copyText(data: string) {
     success: () => uni.showToast({ title: '已复制', icon: 'success' }),
     fail: () => toastError(new Error('无法访问剪贴板，请重试')),
   })
+}
+
+export async function workspaceAction(action: string, args: any = {}) {
+  assertLoggedIn()
+  const result = await authenticatedCall({ action, args })
+  if (!result?.ok) throw new Error(result?.message || '操作失败，请重试')
+  return result
+}
+export async function refreshWorkspace() {
+  const result = await workspaceAction('workspace')
+  groups.value = result.groups || []
+  schedulerStatus.value = result.scheduler || null
+  if (result.profile) updateProfile(result.profile)
+  return result
+}
+export async function switchBook(id: string) {
+  assertLoggedIn()
+  if (syncBusy.value) throw new Error('正在保存，请稍后切换账本')
+  if (refreshTask) await refreshTask
+  assertLoggedIn()
+  if (id && !groups.value.some((g) => g.id === id)) throw new Error('请先加入该群组')
+  currentBookId.value = id
+  currentBookName.value = groups.value.find((g) => g.id === id)?.name || '个人账本'
+  client = makeClient()
+  state.value = emptyState()
+  rules.value = []
+  recordFilter.value = null
+  loadError.value = ''
+  lastSync.value = ''
+  pendingOperation.value = false
+  canDiscardPending.value = false
+  if (!(await refresh()))
+    throw new Error(loadError.value || '账本暂时无法读取，请重试或切换个人账本')
+}
+
+export async function checkRecurring() {
+  assertLoggedIn()
+  if (syncBusy.value) throw new Error('正在保存，请稍后重试')
+  const activeClient = client
+  syncBusy.value = true
+  let r: any
+  try {
+    r = await authenticatedCall({ action: 'runDue', bookId: currentBookId.value })
+    if (!r?.ok) throw new Error(r?.message || '校验失败')
+  } finally {
+    if (client === activeClient) syncBusy.value = false
+  }
+  if (client !== activeClient) throw new Error('登录状态已变化')
+  await refresh()
+  if (r.failed) throw new Error('部分项目未能处理，请稍后重试或检查定期配置')
+  return r
 }

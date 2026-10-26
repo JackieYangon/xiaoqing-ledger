@@ -59,6 +59,25 @@
       "style": {
         "navigationBarTitleText": "云同步"
       }
+    },
+    {
+      "path": "pages/profile/index",
+      "style": {
+        "navigationBarTitleText": "我的资料"
+      }
+    },
+    {
+      "path": "pages/groups/index",
+      "style": {
+        "navigationBarTitleText": "群组与账本",
+        "enableShareAppMessage": true
+      }
+    },
+    {
+      "path": "pages/recurring/index",
+      "style": {
+        "navigationBarTitleText": "定期记账"
+      }
     }
   ],
   "globalStyle": {
@@ -74,19 +93,27 @@
     "list": [
       {
         "pagePath": "pages/home/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "static/tabs/home.png",
+        "selectedIconPath": "static/tabs/home-active.png"
       },
       {
         "pagePath": "pages/records/index",
-        "text": "账单"
+        "text": "账单",
+        "iconPath": "static/tabs/records.png",
+        "selectedIconPath": "static/tabs/records-active.png"
       },
       {
         "pagePath": "pages/stats/index",
-        "text": "统计"
+        "text": "统计",
+        "iconPath": "static/tabs/stats.png",
+        "selectedIconPath": "static/tabs/stats-active.png"
       },
       {
         "pagePath": "pages/about/index",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "static/tabs/about.png",
+        "selectedIconPath": "static/tabs/about-active.png"
       }
     ]
   }

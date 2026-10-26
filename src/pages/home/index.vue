@@ -6,6 +6,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { today, money, summarize, inMonth, budgetProgress } from '@/core/ledger'
 import {
   state,
+  currentBookName,
   entries,
   loadError,
   refresh,
@@ -54,89 +55,90 @@ onShow(refresh)
 </script>
 <template>
   <template v-if="authenticated">
-  <view class="page">
-    <view class="row">
-      <text class="eyebrow">XIAOQING · DAILY LEDGER</text>
-      <text class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
-    </view>
-    <view class="title">把日子，记清楚。</view>
-    <view class="subtitle">已记录 {{ days }} 天，让每一笔都有意义。</view>
-    <view v-if="loadError" class="error">{{ loadError }}</view>
-    <view class="hero">
+    <view class="page">
       <view class="row">
-        <text>{{ month.replace('-', ' 年 ') }} 月支出</text>
-        <button class="hide-button" @tap="hide">
-          {{ state.hideAmounts ? '显示金额' : '隐藏金额' }}
-        </button>
+        <text class="eyebrow">XIAOQING · DAILY LEDGER</text>
+        <text class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
       </view>
-      <view class="hero-amount">
-        <text class="currency">¥</text>
-        {{ display(total.expense) }}
-      </view>
-      <view class="hero-bottom">
-        <view>
-          <view class="hero-label">本月收入</view>
-          <view class="hero-number">¥ {{ display(total.income) }}</view>
+      <view class="title">把日子，记清楚。</view>
+      <view class="badge" @tap="navigate('groups')">{{ currentBookName }} · 切换账本 ›</view>
+      <view class="subtitle">已记录 {{ days }} 天，让每一笔都有意义。</view>
+      <view v-if="loadError" class="error">{{ loadError }}</view>
+      <view class="hero">
+        <view class="row">
+          <text>{{ month.replace('-', ' 年 ') }} 月支出</text>
+          <button class="hide-button" @tap="hide">
+            {{ state.hideAmounts ? '显示金额' : '隐藏金额' }}
+          </button>
         </view>
-        <view>
-          <view class="hero-label">本月结余</view>
-          <view class="hero-number">¥ {{ display(total.income - total.expense) }}</view>
+        <view class="hero-amount">
+          <text class="currency">¥</text>
+          {{ display(total.expense) }}
+        </view>
+        <view class="hero-bottom">
+          <view>
+            <view class="hero-label">本月收入</view>
+            <view class="hero-number">¥ {{ display(total.income) }}</view>
+          </view>
+          <view>
+            <view class="hero-label">本月结余</view>
+            <view class="hero-number">¥ {{ display(total.income - total.expense) }}</view>
+          </view>
         </view>
       </view>
-    </view>
-    <view class="card budget-card" @tap="navigate('budget')">
-      <view class="row">
-        <text>本月预算</text>
-        <text class="small" :class="{ warning: progress.over }">
+      <view class="card budget-card" @tap="navigate('budget')">
+        <view class="row">
+          <text>本月预算</text>
+          <text class="small" :class="{ warning: progress.over }">
+            {{
+              budget?.total
+                ? (progress.over ? '已超支 ¥ ' : '剩余 ¥ ') + display(Math.abs(progress.remaining))
+                : '设置预算 ›'
+            }}
+          </text>
+        </view>
+        <view v-if="budget?.total" class="progress-track">
+          <view
+            class="progress-fill"
+            :class="{ over: progress.over }"
+            :style="{ width: progress.percent + '%' }"
+          />
+        </view>
+        <view v-if="budget?.total" class="muted small budget-note">
           {{
-            budget?.total
-              ? (progress.over ? '已超支 ¥ ' : '剩余 ¥ ') + display(Math.abs(progress.remaining))
-              : '设置预算 ›'
+            state.hideAmounts
+              ? '预算详情已隐藏'
+              : '总预算 ¥ ' +
+                money(budget.total) +
+                ' · 已用 ' +
+                Math.round((total.expense / budget.total) * 100) +
+                '%'
           }}
-        </text>
+        </view>
+        <view v-if="categoryWarnings.length" class="warning small budget-note">
+          {{ categoryWarnings.map((e) => e.name).join('、') }}分类已超支
+        </view>
       </view>
-      <view v-if="budget?.total" class="progress-track">
-        <view
-          class="progress-fill"
-          :class="{ over: progress.over }"
-          :style="{ width: progress.percent + '%' }"
-        />
+      <button class="primary add" @tap="openEntry()">＋ 记一笔</button>
+      <view class="quick-links">
+        <button @tap="navigate('budget')">预算计划</button>
+        <button @tap="navigate('categories')">分类管理</button>
+        <button @tap="navigate('backup')">备份恢复</button>
       </view>
-      <view v-if="budget?.total" class="muted small budget-note">
-        {{
-          state.hideAmounts
-            ? '预算详情已隐藏'
-            : '总预算 ¥ ' +
-              money(budget.total) +
-              ' · 已用 ' +
-              Math.round((total.expense / budget.total) * 100) +
-              '%'
-        }}
+      <view class="row section">
+        <text>最近账单</text>
+        <button class="text-btn" @tap="all">查看全部 ›</button>
       </view>
-      <view v-if="categoryWarnings.length" class="warning small budget-note">
-        {{ categoryWarnings.map((e) => e.name).join('、') }}分类已超支
+      <view class="card recent">
+        <view v-if="!recent.length" class="empty">
+          <view class="empty-symbol">＋</view>
+          <view>账本还是空白的</view>
+          <view class="small">从今天的第一笔收支开始吧</view>
+        </view>
+        <BillList :items="recent" :hidden="state.hideAmounts" />
       </view>
+      <view class="footnote">认真记录，也好好生活。</view>
     </view>
-    <button class="primary add" @tap="openEntry()">＋ 记一笔</button>
-    <view class="quick-links">
-      <button @tap="navigate('budget')">预算计划</button>
-      <button @tap="navigate('categories')">分类管理</button>
-      <button @tap="navigate('backup')">备份恢复</button>
-    </view>
-    <view class="row section">
-      <text>最近账单</text>
-      <button class="text-btn" @tap="all">查看全部 ›</button>
-    </view>
-    <view class="card recent">
-      <view v-if="!recent.length" class="empty">
-        <view class="empty-symbol">＋</view>
-        <view>账本还是空白的</view>
-        <view class="small">从今天的第一笔收支开始吧</view>
-      </view>
-      <BillList :items="recent" :hidden="state.hideAmounts" />
-    </view>
-    <view class="footnote">认真记录，也好好生活。</view>
-  </view>
   </template>
 </template>
 <style scoped>

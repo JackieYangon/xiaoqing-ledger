@@ -219,7 +219,29 @@ function decode(value) {
             !Number.isFinite(Date.parse(e.updatedAt)))
             throw new Error('账单标识或版本无效');
         ids.add(e.id);
+        const extra = {};
+        if (e.author) {
+            if (typeof e.author.id !== 'string' ||
+                !/^[a-f0-9]{64}$/.test(e.author.id) ||
+                typeof e.author.name !== 'string' ||
+                e.author.name.length > 32 ||
+                typeof e.author.avatar !== 'string' ||
+                e.author.avatar.length > 2048)
+                throw new Error('记账人信息无效');
+            extra.author = { id: e.author.id, name: e.author.name, avatar: e.author.avatar };
+        }
+        if (e.ruleId) {
+            if (!/^rule_[a-f0-9]{32}$/.test(e.ruleId) ||
+                typeof e.period !== 'string' ||
+                e.period.length > 16 ||
+                typeof e.automatic !== 'boolean')
+                throw new Error('定期账单信息无效');
+            extra.ruleId = e.ruleId;
+            extra.period = e.period;
+            extra.automatic = e.automatic;
+        }
         state.entries.push({
+            ...extra,
             id: e.id,
             kind: e.kind,
             cents: e.cents,

@@ -13,7 +13,16 @@ import {
   budgetProgress,
   type Budget,
 } from '@/core/ledger'
-import { state, entries, repository, refresh, toastError, syncBusy } from '@/services/ledger'
+import {
+  state,
+  entries,
+  repository,
+  refresh,
+  toastError,
+  syncBusy,
+  canManageBook,
+  currentBookName,
+} from '@/services/ledger'
 const month = ref(today().slice(0, 7)),
   totalInput = ref(''),
   limits = ref<Record<string, string>>({}),
@@ -68,65 +77,74 @@ function spent(name: string) {
 </script>
 <template>
   <template v-if="authenticated">
-  <view class="page">
-    <view class="row">
-      <view class="title compact-title">给开销一点计划</view>
-      <picker mode="date" fields="month" :value="month" @change="changeMonth">
-        <text class="badge">{{ month }} ▾</text>
-      </picker>
-    </view>
-    <view class="subtitle">每个月单独设置，留白表示不设限。</view>
-    <view class="card">
-      <view class="muted">{{ month }} 已支出</view>
-      <view class="budget-amount">¥ {{ money(spending) }}</view>
-      <view v-if="saved?.total" :class="progress.over ? 'warning' : 'income'">
-        {{ progress.over ? '已超支' : '预算剩余' }} ¥ {{ money(Math.abs(progress.remaining)) }}
+    <view class="page">
+      <view class="row">
+        <view class="title compact-title">给开销一点计划</view>
+        <picker mode="date" fields="month" :value="month" @change="changeMonth">
+          <text class="badge">{{ month }} ▾</text>
+        </picker>
       </view>
-      <view v-if="saved?.total" class="progress-track">
-        <view
-          class="progress-fill"
-          :class="{ over: progress.over }"
-          :style="{ width: progress.percent + '%' }"
-        />
+      <view class="subtitle">{{ currentBookName }} · 每个月单独设置，留白表示不设限。</view>
+      <view v-if="!canManageBook" class="muted small">
+        共享预算由群主管理，所有成员的群组支出共同消耗预算。
       </view>
-      <view class="field">
-        <text class="label">月度总预算（元）</text>
-        <input
-          v-model="totalInput"
-          class="input"
-          type="digit"
-          maxlength="11"
-          placeholder="例如 3000.00"
-        />
-      </view>
-    </view>
-    <view class="section">分类预算</view>
-    <view class="muted small">分类限额独立提醒，不自动分摊总预算。</view>
-    <view class="card">
-      <view v-for="name in categories" :key="name" class="limit-row">
-        <view>
-          <view>{{ name }}</view>
-          <view class="muted small">已花 {{ money(spent(name)) }}</view>
-          <view
-            v-if="saved?.categories[name] && spent(name) > saved.categories[name]"
-            class="warning small"
-          >
-            超支 {{ money(spent(name) - saved.categories[name]) }}
-          </view>
+      <view class="card">
+        <view class="muted">{{ month }} 已支出</view>
+        <view class="budget-amount">¥ {{ money(spending) }}</view>
+        <view v-if="saved?.total" :class="progress.over ? 'warning' : 'income'">
+          {{ progress.over ? '已超支' : '预算剩余' }} ¥ {{ money(Math.abs(progress.remaining)) }}
         </view>
-        <input
-          v-model="limits[name]"
-          class="input limit-input"
-          type="digit"
-          maxlength="11"
-          placeholder="不设限"
-        />
+        <view v-if="saved?.total" class="progress-track">
+          <view
+            class="progress-fill"
+            :class="{ over: progress.over }"
+            :style="{ width: progress.percent + '%' }"
+          />
+        </view>
+        <view class="field">
+          <text class="label">月度总预算（元）</text>
+          <input
+            v-model="totalInput"
+            class="input"
+            type="digit"
+            maxlength="11"
+            placeholder="例如 3000.00"
+          />
+        </view>
       </view>
+      <view class="section">分类预算</view>
+      <view class="muted small">分类限额独立提醒，不自动分摊总预算。</view>
+      <view class="card">
+        <view v-for="name in categories" :key="name" class="limit-row">
+          <view>
+            <view>{{ name }}</view>
+            <view class="muted small">已花 {{ money(spent(name)) }}</view>
+            <view
+              v-if="saved?.categories[name] && spent(name) > saved.categories[name]"
+              class="warning small"
+            >
+              超支 {{ money(spent(name) - saved.categories[name]) }}
+            </view>
+          </view>
+          <input
+            v-model="limits[name]"
+            class="input limit-input"
+            :disabled="!canManageBook"
+            type="digit"
+            maxlength="11"
+            placeholder="不设限"
+          />
+        </view>
+      </view>
+      <button
+        class="primary save-budget"
+        :loading="busy"
+        :disabled="!canManageBook || busy || syncBusy"
+        @tap="save"
+      >
+        保存预算
+      </button>
     </view>
-    <button class="primary save-budget" :loading="busy" :disabled="busy || syncBusy" @tap="save">
-      保存预算
-    </button>
-  </view>
   </template>
 </template>
 <style scoped>

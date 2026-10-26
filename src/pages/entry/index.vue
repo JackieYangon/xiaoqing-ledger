@@ -6,6 +6,8 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { categoryOptions, today, money, calculateMoney, type Kind } from '@/core/ledger'
 import {
   repository,
+  rules,
+  currentBookName,
   state,
   entries,
   refresh,
@@ -19,6 +21,19 @@ function newId() {
   return 'entry_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 14)
 }
 const createId = ref(newId())
+const ruleId = ref('')
+const availableRules = computed(() => rules.value.filter((r) => r.active || r.id === ruleId.value))
+const ruleNames = computed(() => ['不关联定期项目', ...availableRules.value.map((r) => r.name)])
+function selectRule(e: any) {
+  const r = availableRules.value[Number(e.detail.value) - 1]
+  ruleId.value = r?.id || ''
+  if (r) {
+    kind.value = 'expense'
+    category.value = r.category
+    amount.value = money(r.cents)
+    note.value = r.note || r.name
+  }
+}
 const id = ref(''),
   version = ref(0),
   kind = ref<Kind>('expense'),
@@ -53,6 +68,10 @@ onLoad(async (args) => {
     invalid.value = true
     return
   }
+  if (args?.ruleId) {
+    const idx = availableRules.value.findIndex((r) => r.id === String(args.ruleId))
+    if (idx >= 0) selectRule({ detail: { value: idx + 1 } })
+  }
   if (args?.date) date.value = String(args.date)
   if (args?.id) {
     id.value = String(args.id)
@@ -60,6 +79,7 @@ onLoad(async (args) => {
       const e = repository.list().find((e) => e.id === id.value)
       if (!e) throw new Error('该账单已不存在')
       version.value = e.version
+      ruleId.value = e.ruleId || ''
       kind.value = e.kind
       amount.value = money(e.cents)
       category.value = e.category
@@ -113,6 +133,7 @@ async function save(again = false) {
       id.value || undefined,
       version.value,
       createId.value,
+      ruleId.value || undefined,
     )
     refresh()
     uni.showToast({ title: saveMessage.value, icon: 'success' })
@@ -130,6 +151,7 @@ async function save(again = false) {
 function copy() {
   createId.value = newId()
   id.value = ''
+  ruleId.value = ''
   version.value = 0
   date.value = today()
   uni.setNavigationBarTitle({ title: '再记一笔' })
@@ -158,88 +180,117 @@ function remove() {
 </script>
 <template>
   <template v-if="authenticated">
-    <view class="muted small" style="padding: 24rpx 32rpx 0">记账人：{{ currentUserLabel }}</view>
-  <view class="page entry-page">
-    <view v-if="invalid" class="error">账单未能加载，请返回同步后重新打开。</view>
-    <view class="row">
-      <view class="title compact">{{ id ? '编辑这一笔' : '记下生活的一笔' }}</view>
-      <button v-if="id" class="text-btn" @tap="copy">再记一笔</button>
+    <view class="muted small" style="padding: 24rpx 32rpx 0">
+      {{ currentBookName }} · 记账人：{{ currentUserLabel }}
     </view>
-    <view class="chips">
-      <view class="chip" :class="{ active: kind === 'expense' }" @tap="changeKind('expense')">
-        支出
-      </view>
-      <view class="chip" :class="{ active: kind === 'income' }" @tap="changeKind('income')">
-        收入
-      </view>
-    </view>
-    <view class="card">
+    <view class="page entry-page">
+      <view v-if="invalid" class="error">账单未能加载，请返回同步后重新打开。</view>
       <view class="row">
-        <text class="label">选择分类</text>
-        <button class="text-btn" @tap="navigate('categories')">管理 ›</button>
+        <view class="title compact">{{ id ? '编辑这一笔' : '记下生活的一笔' }}</view>
+        <button v-if="id" class="text-btn" @tap="copy">再记一笔</button>
       </view>
-      <scroll-view scroll-y class="category-scroll">
-        <view class="category-grid">
-          <view
-            v-for="item in options"
-            :key="item"
-            class="category"
-            :class="{ selected: category === item }"
-            @tap="category = item"
-          >
-            <view class="category-icon">{{ item.slice(0, 1) }}</view>
-            <text class="category-name">{{ item }}</text>
+      <view class="chips">
+        <view class="chip" :class="{ active: kind === 'expense' }" @tap="changeKind('expense')">
+          支出
+        </view>
+        <view class="chip" :class="{ active: kind === 'income' }" @tap="changeKind('income')">
+          收入
+        </view>
+      </view>
+      <picker v-if="availableRules.length" :range="ruleNames" :disabled="!!id" @change="selectRule">
+        <view class="badge" style="margin-top: 20rpx">
+          关联项目：{{ availableRules.find((r) => r.id === ruleId)?.name || '不关联' }} ▾
+        </view>
+      </picker>
+      <view class="card">
+        <view class="row">
+          <text class="label">选择分类</text>
+          <button class="text-btn" @tap="navigate('categories')">管理 ›</button>
+        </view>
+        <scroll-view scroll-y class="category-scroll">
+          <view class="category-grid">
+            <view
+              v-for="item in options"
+              :key="item"
+              class="category"
+              :class="{ selected: category === item }"
+              @tap="category = item"
+            >
+              <view class="category-icon">{{ item.slice(0, 1) }}</view>
+              <text class="category-name">{{ item }}</text>
+            </view>
+          </view>
+        </scroll-view>
+        <view class="divider" />
+        <view class="amount-row">
+          <text>¥</text>
+          <input
+            v-model="amount"
+            type="text"
+            maxlength="80"
+            placeholder="0.00"
+            class="money-input"
+          />
+        </view>
+        <view class="muted small">
+          支持加减计算 · 结果 {{ calculated === '—' ? '待输入' : '¥ ' + calculated }}
+        </view>
+        <view class="details">
+          <picker mode="date" :value="date" @change="changeDate">
+            <view class="badge">{{ date === today() ? '今天' : date }} ▾</view>
+          </picker>
+          <input v-model="note" class="note-input" maxlength="100" placeholder="添加备注（选填）" />
+        </view>
+        <view v-if="suggestions.length" class="chips suggestions">
+          <view v-for="text in suggestions" :key="text" class="chip" @tap="note = text">
+            {{ text }}
           </view>
         </view>
-      </scroll-view>
-      <view class="divider" />
-      <view class="amount-row">
-        <text>¥</text>
-        <input v-model="amount" type="text" maxlength="80" placeholder="0.00" class="money-input" />
       </view>
-      <view class="muted small">
-        支持加减计算 · 结果 {{ calculated === '—' ? '待输入' : '¥ ' + calculated }}
+      <view class="keypad">
+        <button
+          v-for="item in [
+            '1',
+            '2',
+            '3',
+            '+',
+            '4',
+            '5',
+            '6',
+            '-',
+            '7',
+            '8',
+            '9',
+            '⌫',
+            '.',
+            '0',
+            '=',
+          ]"
+          :key="item"
+          class="key"
+          :class="{ operator: ['+', '-', '⌫', '='].includes(item) }"
+          @tap="key(item)"
+        >
+          {{ item }}
+        </button>
+        <button class="key clear" @tap="amount = ''">清空</button>
       </view>
-      <view class="details">
-        <picker mode="date" :value="date" @change="changeDate">
-          <view class="badge">{{ date === today() ? '今天' : date }} ▾</view>
-        </picker>
-        <input v-model="note" class="note-input" maxlength="100" placeholder="添加备注（选填）" />
+      <view class="actions">
+        <button
+          v-if="!id"
+          class="secondary"
+          :disabled="busy || invalid || syncBusy"
+          @tap="save(true)"
+        >
+          保存并再记
+        </button>
+        <button class="primary" :disabled="busy || invalid" :loading="busy" @tap="save(false)">
+          {{ id ? '保存修改' : '保存这一笔' }}
+        </button>
       </view>
-      <view v-if="suggestions.length" class="chips suggestions">
-        <view v-for="text in suggestions" :key="text" class="chip" @tap="note = text">
-          {{ text }}
-        </view>
-      </view>
+      <button v-if="id" class="danger" :disabled="busy || invalid" @tap="remove">删除账单</button>
+      <view class="hint muted">{{ storageLabel }}</view>
     </view>
-    <view class="keypad">
-      <button
-        v-for="item in ['1', '2', '3', '+', '4', '5', '6', '-', '7', '8', '9', '⌫', '.', '0', '=']"
-        :key="item"
-        class="key"
-        :class="{ operator: ['+', '-', '⌫', '='].includes(item) }"
-        @tap="key(item)"
-      >
-        {{ item }}
-      </button>
-      <button class="key clear" @tap="amount = ''">清空</button>
-    </view>
-    <view class="actions">
-      <button
-        v-if="!id"
-        class="secondary"
-        :disabled="busy || invalid || syncBusy"
-        @tap="save(true)"
-      >
-        保存并再记
-      </button>
-      <button class="primary" :disabled="busy || invalid" :loading="busy" @tap="save(false)">
-        {{ id ? '保存修改' : '保存这一笔' }}
-      </button>
-    </view>
-    <button v-if="id" class="danger" :disabled="busy || invalid" @tap="remove">删除账单</button>
-    <view class="hint muted">{{ storageLabel }}</view>
-  </view>
   </template>
 </template>
 <style scoped>

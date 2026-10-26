@@ -3,27 +3,51 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { callLedger, cloudEnabled } from './cloud-transport'
 
 export const authStatus = ref<'signedOut' | 'signingIn' | 'signedIn' | 'checking'>('signedOut')
-export const currentUser = ref<{ accountId: string } | null>(null)
+export const currentUser = ref<{
+  accountId: string
+  name?: string
+  avatar?: string
+  version?: number
+} | null>(null)
 export const authError = ref('')
 export const authenticated = computed(() => authStatus.value === 'signedIn')
-export const currentUserLabel = computed(() => currentUser.value ? '微信用户 · ' + currentUser.value.accountId.slice(0, 8) : '未登录')
-let token = '', expiresAt = 0, generation = 0, redirecting = false
+export const currentUserLabel = computed(() =>
+  currentUser.value
+    ? currentUser.value.name || '微信用户 · ' + currentUser.value.accountId.slice(0, 8)
+    : '未登录',
+)
+let token = '',
+  expiresAt = 0,
+  generation = 0,
+  redirecting = false
 const resetListeners: Array<() => void> = []
-export function onSessionReset(fn: () => void) { resetListeners.push(fn) }
+const foregroundListeners: Array<(ready: boolean) => void | Promise<void>> = []
+export function onForegroundCheck(fn: (ready: boolean) => void | Promise<void>) {
+  foregroundListeners.push(fn)
+}
+export function onSessionReset(fn: () => void) {
+  resetListeners.push(fn)
+}
 export function toLogin() {
   if (redirecting) return
   const pages = getCurrentPages()
   if (pages[pages.length - 1]?.route === 'pages/login/index') return
   redirecting = true
-  uni.reLaunch({ url: '/pages/login/index', complete: () => { redirecting = false } })
+  uni.reLaunch({
+    url: '/pages/login/index',
+    complete: () => {
+      redirecting = false
+    },
+  })
 }
 function clearSession(message = '') {
   generation++
-  token = ''; expiresAt = 0
+  token = ''
+  expiresAt = 0
   currentUser.value = null
   authStatus.value = 'signedOut'
   authError.value = message
-  resetListeners.forEach(fn => fn())
+  resetListeners.forEach((fn) => fn())
 }
 export function requireLogin() {
   if (authenticated.value && token && expiresAt > Date.now()) return true
@@ -36,33 +60,48 @@ export function assertLoggedIn() {
   if (!requireLogin()) throw new Error('请先使用微信登录')
 }
 export function useProtectedPage() {
-  onLoad(() => { requireLogin() })
-  onShow(() => { requireLogin() })
+  onLoad(() => {
+    requireLogin()
+  })
+  onShow(() => {
+    requireLogin()
+  })
   return { authenticated, currentUserLabel }
 }
 export async function login() {
   if (authStatus.value === 'signingIn') return false
-  if (!cloudEnabled) { authError.value = '请在微信中打开小青账本完成登录，网页暂不支持微信登录。'; return false }
+  if (!cloudEnabled) {
+    authError.value = '请在微信中打开小青账本完成登录，网页暂不支持微信登录。'
+    return false
+  }
   clearSession()
   const attempt = generation
   authStatus.value = 'signingIn'
   try {
     const result = await callLedger({ action: 'login' })
     if (attempt !== generation) return false
-    if (!result?.ok || !/^[a-f0-9]{64}$/.test(result.token) || !/^[a-f0-9]{64}$/.test(result.accountId) || result.expiresAt <= Date.now())
+    if (
+      !result?.ok ||
+      !/^[a-f0-9]{64}$/.test(result.token) ||
+      !/^[a-f0-9]{64}$/.test(result.accountId) ||
+      result.expiresAt <= Date.now()
+    )
       throw new Error(result?.message || '微信登录失败，请重试')
-    token = result.token; expiresAt = result.expiresAt
-    currentUser.value = { accountId: result.accountId }
+    token = result.token
+    expiresAt = result.expiresAt
+    currentUser.value = { accountId: result.accountId, ...result.profile }
     authStatus.value = 'signedIn'
     return true
   } catch (e) {
-    if (attempt === generation) clearSession(e instanceof Error ? e.message : (e as any)?.errMsg || '微信登录失败，请重试')
+    if (attempt === generation)
+      clearSession(e instanceof Error ? e.message : (e as any)?.errMsg || '微信登录失败，请重试')
     return false
   }
 }
 export async function authenticatedCall(event: any) {
   assertLoggedIn()
-  const attempt = generation, owner = currentUser.value!.accountId
+  const attempt = generation,
+    owner = currentUser.value!.accountId
   const result = await callLedger({ ...event, token })
   if (attempt !== generation) throw new Error('登录状态已变化，请重新操作')
   if (result?.code === 'AUTH' || (result?.ok && result.accountId !== owner)) {
@@ -74,15 +113,22 @@ export async function authenticatedCall(event: any) {
 }
 export async function resumeSession() {
   if (!token || authStatus.value !== 'signedIn') return
-  const attempt = generation, owner = currentUser.value!.accountId
+  const attempt = generation,
+    owner = currentUser.value!.accountId
   authStatus.value = 'checking'
+  foregroundListeners.forEach((fn) => fn(false))
   try {
     const result = await callLedger({ action: 'session', token })
     if (attempt !== generation) return
-    if (!result?.ok || result.accountId !== owner || result.expiresAt <= Date.now()) throw new Error('登录已失效，请重新登录')
+    if (!result?.ok || result.accountId !== owner || result.expiresAt <= Date.now())
+      throw new Error('登录已失效，请重新登录')
     authStatus.value = 'signedIn'
+    await Promise.all(foregroundListeners.map((fn) => fn(true)))
   } catch {
-    if (attempt === generation) { clearSession('无法验证当前微信身份，请联网后重新登录'); toLogin() }
+    if (attempt === generation) {
+      clearSession('无法验证当前微信身份，请联网后重新登录')
+      toLogin()
+    }
   }
 }
 export async function logout() {
@@ -90,15 +136,24 @@ export async function logout() {
   clearSession()
   toLogin()
   if (oldToken) {
-    try { await callLedger({ action: 'logout', token: oldToken }) }
-    catch { /* Local session is gone. Server session expires and is bound to the same WeChat identity. */ }
+    try {
+      await callLedger({ action: 'logout', token: oldToken })
+    } catch {
+      /* Local session is gone. Server session expires and is bound to the same WeChat identity. */
+    }
   }
 }
 export function installAuthGuards() {
   for (const api of ['navigateTo', 'redirectTo', 'reLaunch', 'switchTab'] as const) {
-    uni.addInterceptor(api, { invoke(args: { url?: string }) {
-      if (args.url?.split('?')[0] === '/pages/login/index') return
-      if (!requireLogin()) return false
-    } })
+    uni.addInterceptor(api, {
+      invoke(args: { url?: string }) {
+        if (args.url?.split('?')[0] === '/pages/login/index') return
+        if (!requireLogin()) return false
+      },
+    })
   }
+}
+
+export function updateProfile(profile: { name: string; avatar: string; version: number }) {
+  if (currentUser.value) currentUser.value = { ...currentUser.value, ...profile }
 }

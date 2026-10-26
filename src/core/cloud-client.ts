@@ -16,22 +16,25 @@ export interface Snapshot {
   accountId: string
   revision: number
   state: LedgerState
+  bookName?: string
+  rules?: any[]
 }
 export function createCloudClient(
   invoke: (event: any) => Promise<any>,
   storage: CloudStorage,
   env: string,
+  bookId = '',
 ) {
   let snapshot: Snapshot | null = null
   let accountId = ''
   let discardAllowed = false
-  const key = () => `xiaoqing.cloud.pending.${env}.${accountId}`
+  const key = () => `xiaoqing.cloud.pending.${env}.${accountId}${bookId ? '.' + bookId : ''}`
   async function call(event: any) {
-    const result = await invoke(event)
+    const result = await invoke({ ...event, ...(bookId ? { bookId } : {}) })
     if (!result || typeof result.ok !== 'boolean')
       throw new CloudFailure('NETWORK', '云端响应无效，请同步确认操作结果')
     if (!result.ok) {
-      if (result.code === 'AUTH') snapshot = null
+      if (['AUTH', 'FORBIDDEN'].includes(result.code)) snapshot = null
       throw new CloudFailure(result.code || 'SERVICE', result.message || '云服务暂不可用')
     }
     if (event.accountId && result.accountId !== event.accountId) {
@@ -63,7 +66,8 @@ export function createCloudClient(
             await call(unresolved)
           } catch (e) {
             discardAllowed =
-              e instanceof CloudFailure && ['CONFLICT', 'VALIDATION', 'LIMIT'].includes(e.code)
+              e instanceof CloudFailure &&
+              ['CONFLICT', 'VALIDATION', 'LIMIT', 'FORBIDDEN'].includes(e.code)
             throw e
           }
           storage.remove(key())
@@ -85,7 +89,13 @@ export function createCloudClient(
         if (entries.length !== meta.count)
           throw new CloudFailure('CONFLICT', '账本正在变化，请重新同步')
         const state = normalizeState({ schema: 2, ...meta.settings, entries })
-        snapshot = { accountId, revision: meta.revision, state }
+        snapshot = {
+          accountId,
+          revision: meta.revision,
+          state,
+          bookName: meta.bookName,
+          rules: meta.rules || [],
+        }
         return snapshot
       } catch (e) {
         if (e instanceof CloudFailure && e.code === 'CONFLICT' && !pending() && attempt < 2)
@@ -112,7 +122,10 @@ export function createCloudClient(
     try {
       result = await call(event)
     } catch (e) {
-      if (e instanceof CloudFailure && ['AUTH', 'CONFLICT', 'VALIDATION', 'LIMIT'].includes(e.code))
+      if (
+        e instanceof CloudFailure &&
+        ['AUTH', 'CONFLICT', 'VALIDATION', 'LIMIT', 'FORBIDDEN'].includes(e.code)
+      )
         storage.remove(key())
       throw e
     }

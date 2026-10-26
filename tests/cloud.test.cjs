@@ -4,75 +4,7 @@ const assert = require('node:assert/strict'),
   ts = require('typescript')
 const { createHandler, APP_ID } = require('../cloudfunctions/ledger/handler')
 const ledger = require('../cloudfunctions/ledger/core.cjs')
-function mockDB() {
-  let docs = new Map(),
-    failWrites = false,
-    queue = Promise.resolve()
-  const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)))
-  function collection(name, map = docs) {
-    return {
-      doc(id) {
-        const key = name + '/' + id
-        return {
-          get: async () => ({ data: clone(map.get(key)) }),
-          set: async ({ data }) => {
-            if (failWrites) throw new Error('write failed')
-            map.set(key, clone({ ...data, _id: id }))
-          },
-          remove: async () => {
-            if (failWrites) throw new Error('write failed')
-            map.delete(key)
-          },
-        }
-      },
-      where(filter) {
-        return {
-          orderBy() {
-            return this
-          },
-          limit(n) {
-            this.n = n
-            return this
-          },
-          async get() {
-            return {
-              data: Array.from(map.entries())
-                .filter(
-                  ([key, value]) =>
-                    key.startsWith(name + '/') &&
-                    Object.entries(filter).every(([field, condition]) =>
-                      condition && typeof condition === 'object'
-                        ? 'gt' in condition && value[field] > condition.gt
-                        : value[field] === condition,
-                    ),
-                )
-                .map(([, value]) => clone(value))
-                .sort((a, b) => a._id.localeCompare(b._id))
-                .slice(0, this.n),
-            }
-          },
-        }
-      },
-    }
-  }
-  const db = {
-    collection: (name) => collection(name),
-    command: { gt: (value) => ({ gt: value }) },
-    runTransaction(fn) {
-      const run = queue.then(async () => {
-        const draft = new Map(Array.from(docs, ([k, v]) => [k, clone(v)]))
-        const result = await fn({ collection: (name) => collection(name, draft) })
-        docs = draft
-        return { result }
-      })
-      queue = run.catch(() => {})
-      return run
-    },
-    setFail: (v) => (failWrites = v),
-    all: () => docs,
-  }
-  return db
-}
+const { mockDB } = require('./mock-db.cjs')
 const db = mockDB(),
   rawHandler = createHandler(db),
   A = { OPENID: 'user-a', APPID: APP_ID },
@@ -161,7 +93,10 @@ function memoryStorage() {
   assert.match(signedIn.token, /^[a-f0-9]{64}$/)
   assert.equal((await rawHandler({ action: 'read', token: signedIn.token }, B)).code, 'AUTH')
   assert.equal((await rawHandler({ action: 'read', token: 'f'.repeat(64) }, A)).code, 'AUTH')
-  assert.equal((await rawHandler({ action: 'session', token: signedIn.token }, A)).accountId, signedIn.accountId)
+  assert.equal(
+    (await rawHandler({ action: 'session', token: signedIn.token }, A)).accountId,
+    signedIn.accountId,
+  )
   assert.equal((await rawHandler({ action: 'logout', token: signedIn.token }, A)).ok, true)
   assert.equal((await rawHandler({ action: 'read', token: signedIn.token }, A)).code, 'AUTH')
   const expired = await rawHandler({ action: 'login' }, A)
