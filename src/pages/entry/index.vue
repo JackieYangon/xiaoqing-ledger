@@ -2,7 +2,21 @@
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { categoryOptions, today, money, calculateMoney, type Kind } from '@/core/ledger'
-import { repository, state, entries, refresh, toastError, navigate } from '@/services/ledger'
+import {
+  repository,
+  state,
+  entries,
+  refresh,
+  toastError,
+  navigate,
+  storageLabel,
+  saveMessage,
+  syncBusy,
+} from '@/services/ledger'
+function newId() {
+  return 'entry_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 14)
+}
+const createId = ref(newId())
 const id = ref(''),
   version = ref(0),
   kind = ref<Kind>('expense'),
@@ -30,8 +44,9 @@ const calculated = computed(() => {
   }
 })
 onShow(refresh)
-onLoad((args) => {
-  refresh()
+onLoad(async (args) => {
+  busy.value = true
+  await refresh()
   if (args?.date) date.value = String(args.date)
   if (args?.id) {
     id.value = String(args.id)
@@ -50,6 +65,7 @@ onLoad((args) => {
       toastError(e)
     }
   }
+  busy.value = false
 })
 function changeKind(value: Kind) {
   kind.value = value
@@ -76,11 +92,11 @@ function key(value: string) {
   }
   if (amount.value.length < 80) amount.value += value
 }
-function save(again = false) {
-  if (busy.value || invalid.value) return
+async function save(again = false) {
+  if (busy.value || invalid.value || syncBusy.value) return
   busy.value = true
   try {
-    repository.save(
+    await repository.save(
       {
         kind: kind.value,
         cents: calculateMoney(amount.value),
@@ -90,10 +106,12 @@ function save(again = false) {
       },
       id.value || undefined,
       version.value,
+      createId.value,
     )
     refresh()
-    uni.showToast({ title: '已保存到本机', icon: 'success' })
+    uni.showToast({ title: saveMessage.value, icon: 'success' })
     if (again) {
+      createId.value = newId()
       amount.value = ''
       note.value = ''
       setTimeout(() => (busy.value = false), 400)
@@ -104,6 +122,7 @@ function save(again = false) {
   }
 }
 function copy() {
+  createId.value = newId()
   id.value = ''
   version.value = 0
   date.value = today()
@@ -115,11 +134,11 @@ function remove() {
     content: '删除后无法恢复，请确认。',
     confirmText: '删除',
     confirmColor: '#b35e4f',
-    success: (result) => {
+    success: async (result) => {
       if (result.confirm && !busy.value) {
         busy.value = true
         try {
-          repository.remove(id.value, version.value)
+          await repository.remove(id.value, version.value)
           refresh()
           done()
         } catch (e) {
@@ -197,7 +216,12 @@ function remove() {
       <button class="key clear" @tap="amount = ''">清空</button>
     </view>
     <view class="actions">
-      <button v-if="!id" class="secondary" :disabled="busy || invalid" @tap="save(true)">
+      <button
+        v-if="!id"
+        class="secondary"
+        :disabled="busy || invalid || syncBusy"
+        @tap="save(true)"
+      >
         保存并再记
       </button>
       <button class="primary" :disabled="busy || invalid" :loading="busy" @tap="save(false)">
@@ -205,7 +229,7 @@ function remove() {
       </button>
     </view>
     <button v-if="id" class="danger" :disabled="busy || invalid" @tap="remove">删除账单</button>
-    <view class="hint muted">本机保存 · 尚未接入云端同步</view>
+    <view class="hint muted">{{ storageLabel }}</view>
   </view>
 </template>
 <style scoped>

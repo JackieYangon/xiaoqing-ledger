@@ -47,6 +47,12 @@
       "style": {
         "navigationBarTitleText": "数据与备份"
       }
+    },
+    {
+      "path": "pages/sync/index",
+      "style": {
+        "navigationBarTitleText": "云同步"
+      }
     }
   ],
   "globalStyle": {

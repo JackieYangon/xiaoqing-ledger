@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { entries, loadError, refresh, navigate } from '@/services/ledger'
+import {
+  entries,
+  loadError,
+  refresh,
+  navigate,
+  storageLabel,
+  cloudEnabled,
+} from '@/services/ledger'
 const days = computed(() => new Set(entries.value.map((e) => e.date)).size)
 onShow(refresh)
 </script>
@@ -17,7 +24,7 @@ onShow(refresh)
     <view class="card">
       <view class="row">
         <text class="section heading">日常账本</text>
-        <text class="badge">本机保存</text>
+        <text class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
       </view>
       <view class="row counts">
         <view>
@@ -30,11 +37,22 @@ onShow(refresh)
         </view>
       </view>
       <view class="muted small">
-        账单保存在当前设备，尚未连接云端。请定期备份，避免清理缓存或更换设备导致记录丢失。
+        {{
+          cloudEnabled
+            ? '云端账本绑定当前微信身份，保存成功后换手机可读取。旧版本地记录请到云同步页面确认迁移。'
+            : '网页为独立本地预览。云端账本请在微信小程序中使用。'
+        }}
       </view>
     </view>
     <view v-if="loadError" class="error">{{ loadError }}</view>
     <view class="card menu">
+      <view class="menu-row" @tap="navigate('sync')">
+        <view>
+          <view>云同步与迁移</view>
+          <view class="muted small">同步状态 · 旧版账单迁移</view>
+        </view>
+        <text>›</text>
+      </view>
       <view class="menu-row" @tap="navigate('budget')">
         <view>
           <view>预算管理</view>
@@ -59,10 +77,10 @@ onShow(refresh)
     </view>
     <view class="card">
       <view class="section heading">关于小青</view>
-      <view class="muted">当前版本 0.2.0 · 本地增强版</view>
+      <view class="muted">当前版本 0.3.0 · 微信云开发版</view>
       <view class="divider" />
       <view class="muted small">
-        快速记账、预算计划、收支日历与趋势统计，让日常开销更清楚。微信登录、云端同步和电脑端将在后续接入。
+        快速记账、预算计划、收支日历与趋势统计。微信端通过云函数保存账本，网页预览不与微信数据互通。
       </view>
     </view>
     <view class="footer">小小的一笔，也是生活的印记。</view>

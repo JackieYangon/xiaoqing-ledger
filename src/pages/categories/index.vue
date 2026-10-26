@@ -2,19 +2,24 @@
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { categories, type Kind } from '@/core/ledger'
-import { state, repository, refresh, toastError } from '@/services/ledger'
+import { state, repository, refresh, toastError, syncBusy } from '@/services/ledger'
+const busy = ref(false)
 const kind = ref<Kind>('expense'),
   name = ref('')
 const custom = computed(() => state.value.customCategories[kind.value])
 onShow(refresh)
-function add() {
+async function add() {
+  if (busy.value || syncBusy.value) return
+  busy.value = true
   try {
-    repository.addCategory(kind.value, name.value)
+    await repository.addCategory(kind.value, name.value)
     refresh()
     name.value = ''
     uni.showToast({ title: '分类已添加', icon: 'success' })
   } catch (e) {
     toastError(e)
+  } finally {
+    busy.value = false
   }
 }
 function remove(value: string) {
@@ -22,10 +27,10 @@ function remove(value: string) {
   uni.showModal({
     title: '删除自定义分类？',
     content: '已用于账单或预算的分类将保留。',
-    success: (r) => {
+    success: async (r) => {
       if (r.confirm)
         try {
-          repository.removeCategory(selectedKind, value)
+          await repository.removeCategory(selectedKind, value)
           refresh()
         } catch (e) {
           toastError(e)
@@ -49,7 +54,7 @@ function remove(value: string) {
     <view class="card">
       <text class="label">新增分类（最多 12 个字）</text>
       <input v-model="name" class="input" maxlength="12" placeholder="例如：咖啡" />
-      <button class="primary add-category" @tap="add">添加分类</button>
+      <button class="primary add-category" :disabled="busy || syncBusy" @tap="add">添加分类</button>
       <view class="muted small tip">每种收支类型最多添加 40 个自定义分类。</view>
     </view>
     <view class="section">自定义分类 · {{ custom.length }}</view>
@@ -57,7 +62,9 @@ function remove(value: string) {
       <view v-if="!custom.length" class="empty">还没有自定义分类</view>
       <view v-for="item in custom" :key="item" class="custom-row row">
         <text>{{ item }}</text>
-        <button class="text-btn warning" @tap="remove(item)">删除</button>
+        <button class="text-btn warning" :disabled="busy || syncBusy" @tap="remove(item)">
+          删除
+        </button>
       </view>
     </view>
     <view class="section">默认分类</view>

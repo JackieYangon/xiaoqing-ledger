@@ -245,6 +245,9 @@ function decode(value: any): LedgerState {
   )
   return state
 }
+export function normalizeState(value: unknown): LedgerState {
+  return decode(value)
+}
 export function parseBackup(text: string) {
   if (!text.trim() || text.length > 2000000)
     throw new Error('备份为空或超过 200 万字符，请检查文件')

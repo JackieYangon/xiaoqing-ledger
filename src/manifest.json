@@ -2,8 +2,8 @@
   "name": "小青账本",
   "appid": "",
   "description": "简洁的日常收支记录工具",
-  "versionName": "0.2.0",
-  "versionCode": "20",
+  "versionName": "0.3.0",
+  "versionCode": "30",
   "transformPx": false,
   "mp-weixin": {
     "appid": "YOUR_APP_ID",

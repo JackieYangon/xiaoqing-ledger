@@ -21,5 +21,6 @@
   },
   "appid": "YOUR_APP_ID",
   "editorSetting": {},
-  "miniprogramRoot": "dist/dev/mp-weixin/"
+  "miniprogramRoot": "dist/dev/mp-weixin/",
+  "cloudfunctionRoot": "cloudfunctions/"
 }

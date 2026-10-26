@@ -2,7 +2,16 @@
 import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { today, toCsv, inMonth } from '@/core/ledger'
-import { entries, repository, refresh, toastError, copyText, loadError } from '@/services/ledger'
+import {
+  entries,
+  repository,
+  refresh,
+  toastError,
+  copyText,
+  loadError,
+  cloudEnabled,
+  syncBusy,
+} from '@/services/ledger'
 const pasted = ref(''),
   preview = ref<{ added: number; skipped: number; conflicts: number } | null>(null),
   previewText = ref(''),
@@ -49,12 +58,12 @@ function restore() {
   }
   uni.showModal({
     title: '确认合并备份？',
-    content: `新增 ${preview.value.added} 笔，跳过 ${preview.value.skipped} 笔。相同 ID 的记录保留本机版本；已有月份预算和隐私设置不覆盖。`,
-    success: (r) => {
+    content: `新增 ${preview.value.added} 笔，跳过 ${preview.value.skipped} 笔。相同 ID 的记录保留当前账本版本；已有月份预算和隐私设置不覆盖。`,
+    success: async (r) => {
       if (r.confirm) {
         try {
           busy.value = true
-          const result = repository.importBackup(previewText.value)
+          const result = await repository.importBackup(previewText.value)
           refresh()
           pasted.value = ''
           preview.value = null
@@ -105,7 +114,7 @@ function restore() {
     <view class="card">
       <view class="section heading">恢复 JSON 备份</view>
       <view class="muted small">
-        支持旧版和新版备份。先检查，再合并；不覆盖本机已有账单。导入前建议先备份当前数据。
+        支持旧版和新版备份。先检查，再合并；不覆盖当前已有账单。导入前建议先备份当前数据。
       </view>
       <textarea
         v-model="pasted"
@@ -117,15 +126,17 @@ function restore() {
       <view v-if="preview" class="import-summary">
         <view>可新增 {{ preview.added }} 笔 · 跳过 {{ preview.skipped }} 笔</view>
         <view class="muted small">
-          其中 {{ preview.conflicts }} 笔同 ID 内容不同，保留本机版本。
+          其中 {{ preview.conflicts }} 笔同 ID 内容不同，保留当前账本版本。
         </view>
-        <button class="primary action" :disabled="busy" :loading="busy" @tap="restore">
+        <button class="primary action" :disabled="busy || syncBusy" :loading="busy" @tap="restore">
           确认合并导入
         </button>
       </view>
     </view>
     <view class="muted small tip">
-      备份和 CSV 含有你的账单信息，请妥善保管，不要发送给陌生人。当前操作均在本机完成。
+      备份和 CSV 含有你的账单信息，请妥善保管，不要发送给陌生人。{{
+        cloudEnabled ? '恢复操作将合并到当前微信账号的云端账本。' : '网页预览数据仅在本机保存。'
+      }}
     </view>
   </view>
 </template>

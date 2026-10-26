@@ -11,6 +11,8 @@ import {
   navigate,
   repository,
   toastError,
+  storageLabel,
+  syncBusy,
 } from '@/services/ledger'
 import BillList from '@/components/BillList.vue'
 const month = computed(() => today().slice(0, 7)),
@@ -34,9 +36,10 @@ const categoryWarnings = computed(() =>
 function display(cents: number) {
   return state.value.hideAmounts ? '••••' : money(cents)
 }
-function hide() {
+async function hide() {
+  if (syncBusy.value) return
   try {
-    repository.setHidden(!state.value.hideAmounts)
+    await repository.setHidden(!state.value.hideAmounts)
     refresh()
   } catch (e) {
     toastError(e)
@@ -51,7 +54,7 @@ onShow(refresh)
   <view class="page">
     <view class="row">
       <text class="eyebrow">XIAOQING · DAILY LEDGER</text>
-      <text class="badge">本机保存</text>
+      <text class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
     </view>
     <view class="title">把日子，记清楚。</view>
     <view class="subtitle">已记录 {{ days }} 天，让每一笔都有意义。</view>

@@ -11,7 +11,7 @@ import {
   budgetProgress,
   type Budget,
 } from '@/core/ledger'
-import { state, entries, repository, refresh, toastError } from '@/services/ledger'
+import { state, entries, repository, refresh, toastError, syncBusy } from '@/services/ledger'
 const month = ref(today().slice(0, 7)),
   totalInput = ref(''),
   limits = ref<Record<string, string>>({}),
@@ -20,8 +20,11 @@ const categories = computed(() => categoryOptions(state.value, 'expense'))
 const spending = computed(() => summarize(inMonth(entries.value, month.value)).expense)
 const saved = computed(() => state.value.budgets[month.value])
 const progress = computed(() => budgetProgress(saved.value?.total || 0, spending.value))
-function load() {
-  refresh()
+async function load() {
+  busy.value = true
+  const ok = await refresh()
+  busy.value = false
+  if (!ok) return
   const b = state.value.budgets[month.value]
   totalInput.value = b?.total ? money(b.total) : ''
   limits.value = {}
@@ -36,8 +39,8 @@ function changeMonth(e: any) {
   month.value = e.detail.value
   load()
 }
-function save() {
-  if (busy.value) return
+async function save() {
+  if (busy.value || syncBusy.value) return
   try {
     busy.value = true
     const b: Budget = {
@@ -46,7 +49,7 @@ function save() {
     }
     for (const [name, limit] of Object.entries(limits.value))
       if (limit.trim()) b.categories[name] = parseMoney(limit)
-    repository.setBudget(month.value, b)
+    await repository.setBudget(month.value, b)
     refresh()
     uni.showToast({ title: '预算已保存', icon: 'success' })
   } catch (e) {
@@ -117,7 +120,7 @@ function spent(name: string) {
         />
       </view>
     </view>
-    <button class="primary save-budget" :loading="busy" :disabled="busy" @tap="save">
+    <button class="primary save-budget" :loading="busy" :disabled="busy || syncBusy" @tap="save">
       保存预算
     </button>
   </view>
