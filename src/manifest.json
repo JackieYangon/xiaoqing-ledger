@@ -10,7 +10,8 @@
     "setting": {
       "urlCheck": true
     },
-    "usingComponents": true
+    "usingComponents": true,
+    "lazyCodeLoading": "requiredComponents"
   },
   "h5": {
     "title": "小青账本"
