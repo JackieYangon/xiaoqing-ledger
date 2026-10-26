@@ -29,6 +29,24 @@
       "style": {
         "navigationBarTitleText": "记一笔"
       }
+    },
+    {
+      "path": "pages/budget/index",
+      "style": {
+        "navigationBarTitleText": "预算管理"
+      }
+    },
+    {
+      "path": "pages/categories/index",
+      "style": {
+        "navigationBarTitleText": "分类管理"
+      }
+    },
+    {
+      "path": "pages/backup/index",
+      "style": {
+        "navigationBarTitleText": "数据与备份"
+      }
     }
   ],
   "globalStyle": {

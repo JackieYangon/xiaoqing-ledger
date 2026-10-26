@@ -1,16 +1,323 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
-import { categories, today, money, parseMoney, type Kind } from '@/core/ledger'
-import { repository, openEntry, refresh, toastError } from '@/services/ledger'
-const id=ref('');const version=ref(0);const kind=ref<Kind>('expense');const amount=ref('');const category=ref('餐饮');const date=ref(today());const note=ref('');const busy=ref(false);const invalid=ref(false)
-const options=computed(()=>categories[kind.value])
-onLoad((args)=>{if(args?.id){id.value=String(args.id);try{const entry=repository.list().find(e=>e.id===id.value);if(!entry)throw new Error('该账单已不存在');version.value=entry.version;kind.value=entry.kind;amount.value=money(entry.cents);category.value=entry.category;date.value=entry.date;note.value=entry.note;uni.setNavigationBarTitle({title:'编辑账单'})}catch(e){invalid.value=true;toastError(e)}}})
-function changeKind(value:Kind){kind.value=value;category.value=categories[value][0]}
-function changeDate(e:any){date.value=e.detail.value}
-function done(){uni.navigateBack({fail:()=>uni.switchTab({url:'/pages/records/index'})})}
-function save(){if(busy.value||invalid.value)return;busy.value=true;try{repository.save({kind:kind.value,cents:parseMoney(amount.value),category:category.value,date:date.value,note:note.value},id.value||undefined,version.value);refresh();uni.showToast({title:'已保存到本机',icon:'success'});done()}catch(e){busy.value=false;toastError(e)}}
-function remove(){uni.showModal({title:'删除这笔账单？',content:'删除后无法恢复，请确认。',confirmText:'删除',confirmColor:'#b35e4f',success:(result)=>{if(result.confirm&&!busy.value){busy.value=true;try{repository.remove(id.value,version.value);refresh();done()}catch(e){busy.value=false;toastError(e)}}}})}
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import { categoryOptions, today, money, calculateMoney, type Kind } from '@/core/ledger'
+import { repository, state, entries, refresh, toastError, navigate } from '@/services/ledger'
+const id = ref(''),
+  version = ref(0),
+  kind = ref<Kind>('expense'),
+  amount = ref(''),
+  category = ref('餐饮'),
+  date = ref(today()),
+  note = ref(''),
+  busy = ref(false),
+  invalid = ref(false)
+const options = computed(() => categoryOptions(state.value, kind.value))
+const suggestions = computed(() =>
+  Array.from(
+    new Set(
+      entries.value
+        .filter((e) => e.kind === kind.value && e.category === category.value && e.note)
+        .map((e) => e.note),
+    ),
+  ).slice(0, 4),
+)
+const calculated = computed(() => {
+  try {
+    return money(calculateMoney(amount.value))
+  } catch {
+    return '—'
+  }
+})
+onShow(refresh)
+onLoad((args) => {
+  refresh()
+  if (args?.date) date.value = String(args.date)
+  if (args?.id) {
+    id.value = String(args.id)
+    try {
+      const e = repository.list().find((e) => e.id === id.value)
+      if (!e) throw new Error('该账单已不存在')
+      version.value = e.version
+      kind.value = e.kind
+      amount.value = money(e.cents)
+      category.value = e.category
+      date.value = e.date
+      note.value = e.note
+      uni.setNavigationBarTitle({ title: '编辑账单' })
+    } catch (e) {
+      invalid.value = true
+      toastError(e)
+    }
+  }
+})
+function changeKind(value: Kind) {
+  kind.value = value
+  category.value = categoryOptions(state.value, value)[0]
+}
+function changeDate(e: any) {
+  date.value = e.detail.value
+}
+function done() {
+  uni.navigateBack({ fail: () => uni.switchTab({ url: '/pages/records/index' }) })
+}
+function key(value: string) {
+  if (value === '⌫') {
+    amount.value = amount.value.slice(0, -1)
+    return
+  }
+  if (value === '=') {
+    try {
+      amount.value = money(calculateMoney(amount.value))
+    } catch (e) {
+      toastError(e)
+    }
+    return
+  }
+  if (amount.value.length < 80) amount.value += value
+}
+function save(again = false) {
+  if (busy.value || invalid.value) return
+  busy.value = true
+  try {
+    repository.save(
+      {
+        kind: kind.value,
+        cents: calculateMoney(amount.value),
+        category: category.value,
+        date: date.value,
+        note: note.value,
+      },
+      id.value || undefined,
+      version.value,
+    )
+    refresh()
+    uni.showToast({ title: '已保存到本机', icon: 'success' })
+    if (again) {
+      amount.value = ''
+      note.value = ''
+      setTimeout(() => (busy.value = false), 400)
+    } else done()
+  } catch (e) {
+    busy.value = false
+    toastError(e)
+  }
+}
+function copy() {
+  id.value = ''
+  version.value = 0
+  date.value = today()
+  uni.setNavigationBarTitle({ title: '再记一笔' })
+}
+function remove() {
+  uni.showModal({
+    title: '删除这笔账单？',
+    content: '删除后无法恢复，请确认。',
+    confirmText: '删除',
+    confirmColor: '#b35e4f',
+    success: (result) => {
+      if (result.confirm && !busy.value) {
+        busy.value = true
+        try {
+          repository.remove(id.value, version.value)
+          refresh()
+          done()
+        } catch (e) {
+          busy.value = false
+          toastError(e)
+        }
+      }
+    },
+  })
+}
 </script>
-<template><view class="page"><view class="subtitle">小青账本 · 日常账本</view><view class="title">{{id?'编辑这一笔':'记下生活的一笔'}}</view><view class="chips"><view class="chip" :class="{active:kind==='expense'}" @tap="changeKind('expense')">支出</view><view class="chip" :class="{active:kind==='income'}" @tap="changeKind('income')">收入</view></view><view class="card"><text class="label">金额（元）</text><view class="amount-row"><text>¥</text><input v-model="amount" type="digit" maxlength="11" placeholder="0.00" class="money-input"/></view><view class="divider"/><text class="label">分类</text><view class="category-grid"><view v-for="item in options" :key="item" class="category" :class="{selected:category===item}" @tap="category=item"><view class="category-icon">{{item.slice(0,1)}}</view><text>{{item}}</text></view></view><view class="field"><text class="label">日期</text><picker mode="date" :value="date" @change="changeDate"><view class="input row"><text>{{date}}</text><text>›</text></view></picker></view><view class="field"><text class="label">备注（选填）</text><input v-model="note" class="input" maxlength="100" placeholder="这一笔，花在了哪里？"/></view></view><button class="primary save" :disabled="busy||invalid" :loading="busy" @tap="save">{{id?'保存修改':'保存这一笔'}}</button><button v-if="id" class="danger" :disabled="busy||invalid" @tap="remove">删除账单</button><view class="muted hint">当前保存在此设备，尚未接入云端同步。</view></view></template>
-<style scoped>.amount-row{display:flex;align-items:center;gap:20rpx;font-size:52rpx}.money-input{font-size:64rpx;height:100rpx;flex:1;min-width:0}.category-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20rpx 8rpx}.category{display:flex;align-items:center;flex-direction:column;gap:12rpx;font-size:24rpx;padding:10rpx;border-radius:18rpx}.selected{background:#e7f0df;color:#246342}.selected .category-icon{background:#2e7957;color:#fff}.save{margin-top:32rpx;line-height:84rpx}.hint{text-align:center;margin-top:26rpx;font-size:22rpx}</style>
+<template>
+  <view class="page entry-page">
+    <view class="row">
+      <view class="title compact">{{ id ? '编辑这一笔' : '记下生活的一笔' }}</view>
+      <button v-if="id" class="text-btn" @tap="copy">再记一笔</button>
+    </view>
+    <view class="chips">
+      <view class="chip" :class="{ active: kind === 'expense' }" @tap="changeKind('expense')">
+        支出
+      </view>
+      <view class="chip" :class="{ active: kind === 'income' }" @tap="changeKind('income')">
+        收入
+      </view>
+    </view>
+    <view class="card">
+      <view class="row">
+        <text class="label">选择分类</text>
+        <button class="text-btn" @tap="navigate('categories')">管理 ›</button>
+      </view>
+      <scroll-view scroll-y class="category-scroll">
+        <view class="category-grid">
+          <view
+            v-for="item in options"
+            :key="item"
+            class="category"
+            :class="{ selected: category === item }"
+            @tap="category = item"
+          >
+            <view class="category-icon">{{ item.slice(0, 1) }}</view>
+            <text class="category-name">{{ item }}</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="divider" />
+      <view class="amount-row">
+        <text>¥</text>
+        <input v-model="amount" type="text" maxlength="80" placeholder="0.00" class="money-input" />
+      </view>
+      <view class="muted small">
+        支持加减计算 · 结果 {{ calculated === '—' ? '待输入' : '¥ ' + calculated }}
+      </view>
+      <view class="details">
+        <picker mode="date" :value="date" @change="changeDate">
+          <view class="badge">{{ date === today() ? '今天' : date }} ▾</view>
+        </picker>
+        <input v-model="note" class="note-input" maxlength="100" placeholder="添加备注（选填）" />
+      </view>
+      <view v-if="suggestions.length" class="chips suggestions">
+        <view v-for="text in suggestions" :key="text" class="chip" @tap="note = text">
+          {{ text }}
+        </view>
+      </view>
+    </view>
+    <view class="keypad">
+      <button
+        v-for="item in ['1', '2', '3', '+', '4', '5', '6', '-', '7', '8', '9', '⌫', '.', '0', '=']"
+        :key="item"
+        class="key"
+        :class="{ operator: ['+', '-', '⌫', '='].includes(item) }"
+        @tap="key(item)"
+      >
+        {{ item }}
+      </button>
+      <button class="key clear" @tap="amount = ''">清空</button>
+    </view>
+    <view class="actions">
+      <button v-if="!id" class="secondary" :disabled="busy || invalid" @tap="save(true)">
+        保存并再记
+      </button>
+      <button class="primary" :disabled="busy || invalid" :loading="busy" @tap="save(false)">
+        {{ id ? '保存修改' : '保存这一笔' }}
+      </button>
+    </view>
+    <button v-if="id" class="danger" :disabled="busy || invalid" @tap="remove">删除账单</button>
+    <view class="hint muted">本机保存 · 尚未接入云端同步</view>
+  </view>
+</template>
+<style scoped>
+.compact {
+  font-size: 38rpx;
+}
+.entry-page {
+  padding-top: 20rpx;
+}
+.category-scroll {
+  max-height: 310rpx;
+}
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10rpx;
+}
+.category {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10rpx;
+  font-size: 23rpx;
+  padding: 12rpx 2rpx;
+  border-radius: 18rpx;
+}
+.category-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.category-icon {
+  width: 66rpx;
+  height: 66rpx;
+}
+.selected {
+  background: #e7f0df;
+  color: #246342;
+}
+.selected .category-icon {
+  background: #2e7957;
+  color: white;
+}
+.amount-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 44rpx;
+}
+.money-input {
+  font-size: 52rpx;
+  height: 90rpx;
+  flex: 1;
+  min-width: 0;
+}
+.details {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+.details .badge {
+  white-space: nowrap;
+}
+.note-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 25rpx;
+}
+.suggestions {
+  margin-top: 20rpx;
+}
+.suggestions .chip {
+  font-size: 22rpx;
+  max-width: 240rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12rpx;
+  margin-top: 24rpx;
+}
+.key {
+  background: white;
+  border-radius: 16rpx;
+  font-size: 36rpx;
+  line-height: 84rpx;
+}
+.operator {
+  background: #e8f0e9;
+  color: #267858;
+}
+.clear {
+  font-size: 25rpx;
+  color: #84918b;
+}
+.actions {
+  display: flex;
+  gap: 18rpx;
+  margin-top: 24rpx;
+}
+.actions button {
+  flex: 1;
+  line-height: 76rpx;
+}
+.hint {
+  text-align: center;
+  font-size: 22rpx;
+  margin-top: 24rpx;
+}
+</style>

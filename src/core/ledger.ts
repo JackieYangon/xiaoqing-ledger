@@ -1,51 +1,399 @@
 export type Kind = 'expense' | 'income'
-export interface Entry { id: string; kind: Kind; cents: number; category: string; date: string; note: string; version: number; updatedAt: string }
+export interface Entry {
+  id: string
+  kind: Kind
+  cents: number
+  category: string
+  date: string
+  note: string
+  version: number
+  updatedAt: string
+}
 export type Draft = Pick<Entry, 'kind' | 'cents' | 'category' | 'date' | 'note'>
-export const categories = { expense: ['餐饮','交通','购物','居家','娱乐','医疗','学习','其他'], income: ['工资','奖金','兼职','其他'] }
-export function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+export interface Budget {
+  total: number
+  categories: Record<string, number>
+}
+export interface LedgerState {
+  schema: 2
+  entries: Entry[]
+  customCategories: Record<Kind, string[]>
+  budgets: Record<string, Budget>
+  hideAmounts: boolean
+}
+export const categories: Record<Kind, string[]> = {
+  expense: ['餐饮', '交通', '购物', '居家', '娱乐', '医疗', '学习', '其他'],
+  income: ['工资', '奖金', '兼职', '其他'],
+}
+export const MAX_CENTS = 9999999999
+export function emptyState(): LedgerState {
+  return {
+    schema: 2,
+    entries: [],
+    customCategories: { expense: [], income: [] },
+    budgets: {},
+    hideAmounts: false,
+  }
+}
+export function today() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 export function parseMoney(value: string): number {
   if (!/^\d{1,8}(\.\d{1,2})?$/.test(value.trim())) throw new Error('请输入有效金额，最多两位小数')
   const [whole, fraction = ''] = value.trim().split('.')
-  const cents = Number(whole) * 100 + Number(fraction.padEnd(2,'0'))
+  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, '0'))
   if (cents <= 0) throw new Error('金额必须大于 0')
   return cents
 }
-export function money(cents: number) { return (cents / 100).toFixed(2) }
-export function validDate(date: string) { if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false; const d = new Date(date+'T12:00:00Z'); return !isNaN(d.getTime()) && d.toISOString().slice(0,10) === date }
-export function validate(d: Draft) {
-  if (!d || !['expense','income'].includes(d.kind)) throw new Error('收支类型无效')
-  if (!Number.isSafeInteger(d.cents) || d.cents <= 0 || d.cents > 9999999999) throw new Error('金额超出范围')
-  if (!categories[d.kind].includes(d.category)) throw new Error('请选择有效分类')
+// Only addition/subtraction of decimal amounts; never execute user input as code.
+export function calculateMoney(expression: string): number {
+  const text = expression.replace(/\s/g, '')
+  if (!text || text.length > 80 || !/^\d+(?:\.\d{1,2})?(?:[+-]\d+(?:\.\d{1,2})?)*$/.test(text))
+    throw new Error('请输入金额或完整的加减算式，例如 18.5+6-2')
+  let cents = 0
+  for (const token of text.match(/[+-]?\d+(?:\.\d{1,2})?/g) || []) {
+    const sign = token.startsWith('-') ? -1 : 1
+    const value = token.replace(/^[+-]/, '')
+    cents += sign * (Number(value) === 0 ? 0 : parseMoney(value))
+  }
+  if (!Number.isSafeInteger(cents) || cents <= 0 || cents > MAX_CENTS)
+    throw new Error('计算结果应大于 0，且不超过 99999999.99 元')
+  return cents
+}
+export function money(cents: number) {
+  return (cents / 100).toFixed(2)
+}
+export function validDate(date: string) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false
+  const d = new Date(date + 'T12:00:00Z')
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === date
+}
+export function validMonth(month: string) {
+  return typeof month === 'string' && validDate(month + '-01')
+}
+export function shiftMonth(month: string, delta: number) {
+  const [y, m] = month.split('-').map(Number)
+  const d = new Date(`${y}-${String(m).padStart(2, '0')}-01T12:00:00Z`)
+  d.setUTCMonth(d.getUTCMonth() + delta)
+  return d.toISOString().slice(0, 7)
+}
+export function monthDays(month: string) {
+  if (!validMonth(month)) throw new Error('月份无效')
+  const [year, m] = month.split('-').map(Number)
+  return new Date(Date.UTC(year, m, 0)).getUTCDate()
+}
+export function categoryOptions(state: LedgerState, kind: Kind) {
+  return [...categories[kind], ...state.customCategories[kind]]
+}
+function validName(name: unknown): name is string {
+  return (
+    typeof name === 'string' &&
+    name.trim() === name &&
+    name.length > 0 &&
+    name.length <= 12 &&
+    !['__proto__', 'constructor', 'prototype'].includes(name)
+  )
+}
+export function validate(d: Draft, available = categories) {
+  if (!d || !['expense', 'income'].includes(d.kind)) throw new Error('收支类型无效')
+  if (!Number.isSafeInteger(d.cents) || d.cents <= 0 || d.cents > MAX_CENTS)
+    throw new Error('金额超出范围')
+  if (!available[d.kind].includes(d.category)) throw new Error('请选择有效分类')
   if (!validDate(d.date)) throw new Error('日期无效')
   if (typeof d.note !== 'string' || d.note.length > 100) throw new Error('备注最多 100 字')
 }
-export function summarize(entries: Entry[]) { return entries.reduce((sum,e) => {sum[e.kind] += e.cents; return sum}, {expense:0,income:0}) }
-export interface Storage { read(): unknown; write(value: string): void }
-export function createRepository(storage: Storage) {
-  function list(): Entry[] {
-    const raw = storage.read()
-    if (raw === '' || raw == null) return []
-    try {
-      const data = JSON.parse(String(raw))
-      if (data.schema !== 1 || !Array.isArray(data.entries)) throw new Error()
-      const ids = new Set<string>()
-      for (const entry of data.entries) { validate(entry); if (typeof entry.id !== 'string' || !entry.id || ids.has(entry.id) || !Number.isInteger(entry.version) || entry.version < 1 || typeof entry.updatedAt !== 'string') throw new Error(); ids.add(entry.id) }
-      return data.entries.sort((a: Entry,b: Entry) => b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt))
-    } catch { throw new Error('本地账本读取失败，已停止写入以保护原始数据') }
-  }
-  function persist(entries: Entry[]) { storage.write(JSON.stringify({schema:1,entries})) }
+export function summarize(entries: Entry[]) {
+  return entries.reduce(
+    (sum, e) => {
+      sum[e.kind] += e.cents
+      return sum
+    },
+    { expense: 0, income: 0 },
+  )
+}
+export function inMonth(entries: Entry[], month: string) {
+  return entries.filter((e) => e.date.startsWith(month + '-'))
+}
+export function groupDays(entries: Entry[]) {
+  const groups = new Map<string, Entry[]>()
+  for (const e of entries) groups.set(e.date, [...(groups.get(e.date) || []), e])
+  return Array.from(groups, ([date, items]) => ({
+    date,
+    entries: items,
+    ...summarize(items),
+  })).sort((a, b) => b.date.localeCompare(a.date))
+}
+export function calendar(month: string, entries: Entry[]) {
+  const summaries = new Map(groupDays(inMonth(entries, month)).map((day) => [day.date, day]))
+  const leading = (new Date(month + '-01T12:00:00Z').getUTCDay() + 6) % 7
+  return [
+    ...Array.from({ length: leading }, () => ({ date: '', day: 0, income: 0, expense: 0 })),
+    ...Array.from({ length: monthDays(month) }, (_, i) => {
+      const date = `${month}-${String(i + 1).padStart(2, '0')}`
+      const total = summaries.get(date)
+      return { date, day: i + 1, income: total?.income || 0, expense: total?.expense || 0 }
+    }),
+  ]
+}
+export function categoryTotals(entries: Entry[], kind: Kind) {
+  const groups = new Map<string, number>()
+  const total = summarize(entries)[kind]
+  for (const e of entries.filter((e) => e.kind === kind))
+    groups.set(e.category, (groups.get(e.category) || 0) + e.cents)
+  return Array.from(groups, ([name, cents]) => ({
+    name,
+    cents,
+    percent: total ? Math.round((cents / total) * 100) : 0,
+  })).sort((a, b) => b.cents - a.cents)
+}
+export function budgetProgress(budget: number, spent: number) {
   return {
-    list,
+    remaining: budget - spent,
+    percent: budget ? Math.min(100, Math.round((spent / budget) * 100)) : 0,
+    over: budget > 0 && spent > budget,
+  }
+}
+function decode(value: any): LedgerState {
+  if (
+    !value ||
+    ![1, 2].includes(value.schema) ||
+    !Array.isArray(value.entries) ||
+    value.entries.length > 50000
+  )
+    throw new Error('不支持的账本格式')
+  const state = emptyState()
+  if (value.schema === 2) {
+    if (
+      !value.customCategories ||
+      typeof value.hideAmounts !== 'boolean' ||
+      !value.budgets ||
+      typeof value.budgets !== 'object' ||
+      Array.isArray(value.budgets)
+    )
+      throw new Error('账本设置格式错误')
+    for (const kind of ['expense', 'income'] as Kind[]) {
+      const items = value.customCategories[kind]
+      if (
+        !Array.isArray(items) ||
+        items.length > 40 ||
+        items.some((name: unknown) => !validName(name)) ||
+        new Set([...categories[kind], ...items]).size !== categories[kind].length + items.length
+      )
+        throw new Error('分类格式错误')
+      state.customCategories[kind] = [...items]
+    }
+    state.hideAmounts = value.hideAmounts
+    for (const [month, b] of Object.entries(value.budgets) as [string, any][]) {
+      if (
+        !validMonth(month) ||
+        !b ||
+        !Number.isSafeInteger(b.total) ||
+        b.total < 0 ||
+        b.total > MAX_CENTS ||
+        !b.categories ||
+        typeof b.categories !== 'object' ||
+        Array.isArray(b.categories)
+      )
+        throw new Error('预算格式错误')
+      const limits: Record<string, number> = {}
+      for (const [name, limit] of Object.entries(b.categories)) {
+        if (
+          !categoryOptions(state, 'expense').includes(name) ||
+          !Number.isSafeInteger(limit) ||
+          Number(limit) <= 0 ||
+          Number(limit) > MAX_CENTS
+        )
+          throw new Error('分类预算格式错误')
+        limits[name] = Number(limit)
+      }
+      state.budgets[month] = { total: b.total, categories: limits }
+    }
+  }
+  const available = {
+    expense: categoryOptions(state, 'expense'),
+    income: categoryOptions(state, 'income'),
+  }
+  const ids = new Set<string>()
+  for (const e of value.entries) {
+    validate(e, available)
+    if (
+      typeof e.id !== 'string' ||
+      !e.id ||
+      e.id.length > 120 ||
+      ids.has(e.id) ||
+      !Number.isInteger(e.version) ||
+      e.version < 1 ||
+      typeof e.updatedAt !== 'string' ||
+      !Number.isFinite(Date.parse(e.updatedAt))
+    )
+      throw new Error('账单标识或版本无效')
+    ids.add(e.id)
+    state.entries.push({
+      id: e.id,
+      kind: e.kind,
+      cents: e.cents,
+      category: e.category,
+      date: e.date,
+      note: e.note,
+      version: e.version,
+      updatedAt: e.updatedAt,
+    })
+  }
+  state.entries.sort(
+    (a, b) => b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt),
+  )
+  return state
+}
+export function parseBackup(text: string) {
+  if (!text.trim() || text.length > 2000000)
+    throw new Error('备份为空或超过 200 万字符，请检查文件')
+  try {
+    return decode(JSON.parse(text.replace(/^\uFEFF/, '')))
+  } catch (e) {
+    throw new Error('备份校验失败：' + (e instanceof Error ? e.message : '格式错误'))
+  }
+}
+export function toCsv(entries: Entry[]) {
+  const escape = (value: string) =>
+    '"' + (/^[\s]*[=+\-@\t\r]/.test(value) ? "'" + value : value).replace(/"/g, '""') + '"'
+  return (
+    '\uFEFF' +
+    [
+      ['日期', '类型', '分类', '金额（元）', '备注'],
+      ...entries.map((e) => [
+        e.date,
+        e.kind === 'expense' ? '支出' : '收入',
+        e.category,
+        money(e.cents),
+        e.note,
+      ]),
+    ]
+      .map((row) => row.map(escape).join(','))
+      .join('\r\n')
+  )
+}
+export interface Storage {
+  read(): unknown
+  write(value: string): void
+}
+export function createRepository(storage: Storage) {
+  function read(): LedgerState {
+    const raw = storage.read()
+    if (raw === '' || raw == null) return emptyState()
+    try {
+      return decode(JSON.parse(String(raw)))
+    } catch {
+      throw new Error('本地账本读取失败，已停止写入以保护原始数据')
+    }
+  }
+  function persist(state: LedgerState) {
+    const checked = decode(state)
+    storage.write(JSON.stringify(checked))
+  }
+  function mergeBackup(text: string) {
+    const incoming = parseBackup(text)
+    const state = read()
+    let added = 0,
+      skipped = 0,
+      conflicts = 0
+    const existing = new Map(state.entries.map((e) => [e.id, e]))
+    for (const entry of incoming.entries) {
+      const previous = existing.get(entry.id)
+      if (previous) {
+        skipped++
+        if (JSON.stringify(previous) !== JSON.stringify(entry)) conflicts++
+      } else {
+        state.entries.push(entry)
+        added++
+      }
+    }
+    for (const kind of ['expense', 'income'] as Kind[])
+      state.customCategories[kind] = Array.from(
+        new Set([...state.customCategories[kind], ...incoming.customCategories[kind]]),
+      )
+    for (const [month, budget] of Object.entries(incoming.budgets)) {
+      if (!state.budgets[month]) state.budgets[month] = budget
+    }
+    // Import never overwrites current entries or settings; validate the merged result too.
+    return { state: decode(state), added, skipped, conflicts }
+  }
+  return {
+    read,
+    list: () => read().entries,
     save(draft: Draft, id?: string, expectedVersion?: number) {
-      validate(draft)
-      const entries = list()
-      const previous = id ? entries.find(e=>e.id===id) : undefined
+      const state = read()
+      validate(draft, {
+        expense: categoryOptions(state, 'expense'),
+        income: categoryOptions(state, 'income'),
+      })
+      const previous = id ? state.entries.find((e) => e.id === id) : undefined
       if (id && !previous) throw new Error('该账单已不存在')
-      if (previous && previous.version !== expectedVersion) throw new Error('账单已发生变化，请返回重新打开')
-      const entry: Entry = {...draft, note:draft.note.trim(), id: previous?.id || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,12)}`, version:(previous?.version || 0)+1, updatedAt:new Date().toISOString()}
-      persist([entry, ...entries.filter(e=>e.id!==entry.id)])
+      if (previous && previous.version !== expectedVersion)
+        throw new Error('账单已发生变化，请返回重新打开')
+      const entry: Entry = {
+        ...draft,
+        note: draft.note.trim(),
+        id: previous?.id || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`,
+        version: (previous?.version || 0) + 1,
+        updatedAt: new Date().toISOString(),
+      }
+      state.entries = [entry, ...state.entries.filter((e) => e.id !== entry.id)]
+      persist(state)
       return entry
     },
-    remove(id: string, version: number) { const entries=list(); const entry=entries.find(e=>e.id===id); if (!entry || entry.version!==version) throw new Error('账单已发生变化，请刷新后重试'); persist(entries.filter(e=>e.id!==id)) }
+    remove(id: string, version: number) {
+      const state = read()
+      const entry = state.entries.find((e) => e.id === id)
+      if (!entry || entry.version !== version) throw new Error('账单已发生变化，请刷新后重试')
+      state.entries = state.entries.filter((e) => e.id !== id)
+      persist(state)
+    },
+    setBudget(month: string, budget: Budget) {
+      if (!validMonth(month)) throw new Error('月份无效')
+      const state = read()
+      state.budgets[month] = budget
+      persist(state)
+    },
+    addCategory(kind: Kind, name: string) {
+      const state = read()
+      name = name.trim()
+      if (!validName(name)) throw new Error('分类名称需为 1–12 个字')
+      if (categoryOptions(state, kind).includes(name)) throw new Error('该分类已存在')
+      state.customCategories[kind].push(name)
+      persist(state)
+    },
+    removeCategory(kind: Kind, name: string) {
+      const state = read()
+      if (!state.customCategories[kind].includes(name)) throw new Error('默认分类不能删除')
+      if (
+        state.entries.some((e) => e.kind === kind && e.category === name) ||
+        (kind === 'expense' && Object.values(state.budgets).some((b) => b.categories[name]))
+      )
+        throw new Error('分类已被账单或预算使用，请保留以便查询历史')
+      state.customCategories[kind] = state.customCategories[kind].filter((n) => n !== name)
+      persist(state)
+    },
+    setHidden(value: boolean) {
+      const state = read()
+      state.hideAmounts = value
+      persist(state)
+    },
+    exportBackup() {
+      return JSON.stringify(
+        { app: '小青账本', exportedAt: new Date().toISOString(), ...read() },
+        null,
+        2,
+      )
+    },
+    previewImport(text: string) {
+      const { added, skipped, conflicts } = mergeBackup(text)
+      return { added, skipped, conflicts }
+    },
+    importBackup(text: string) {
+      const { state, ...result } = mergeBackup(text)
+      persist(state)
+      return result
+    },
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "xiaoqing-ledger",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "scripts": {
     "dev:mp-weixin": "uni -p mp-weixin",
     "build:mp-weixin": "uni build -p mp-weixin",
