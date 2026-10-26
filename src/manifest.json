@@ -1,0 +1,22 @@
+{
+  "name": "小青账本",
+  "appid": "",
+  "description": "简洁的日常收支记录工具",
+  "versionName": "0.1.0",
+  "versionCode": "10",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "YOUR_APP_ID",
+    "setting": {
+      "urlCheck": true
+    },
+    "usingComponents": true
+  },
+  "h5": {
+    "title": "小青账本"
+  },
+  "uniStatistics": {
+    "enable": false
+  },
+  "vueVersion": "3"
+}

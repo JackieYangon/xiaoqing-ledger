@@ -1,0 +1,14 @@
+<script setup lang="ts">
+import { ref,computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { today,money,summarize } from '@/core/ledger'
+import { entries,loadError,refresh } from '@/services/ledger'
+const month=ref(today().slice(0,7));const kind=ref<'expense'|'income'>('expense')
+const monthly=computed(()=>entries.value.filter(e=>e.date.startsWith(month.value)))
+const total=computed(()=>summarize(monthly.value))
+const groups=computed(()=>{const grouped:Record<string,number>={};for(const e of monthly.value.filter(e=>e.kind===kind.value))grouped[e.category]=(grouped[e.category]||0)+e.cents;return Object.entries(grouped).map(([name,cents])=>({name,cents,percent:total.value[kind.value]?Math.round(cents/total.value[kind.value]*100):0})).sort((a,b)=>b.cents-a.cents)})
+function changeMonth(e:any){month.value=e.detail.value}
+onShow(refresh)
+</script>
+<template><view class="page"><view class="eyebrow">A LITTLE MORE CLARITY</view><view class="row"><view class="title">生活，心中有数</view><picker mode="date" fields="month" :value="month" @change="changeMonth"><text class="badge">{{month}} ▾</text></picker></view><view class="subtitle">看清开销的去向，找到适合自己的节奏。</view><view v-if="loadError" class="error">{{loadError}}</view><view class="card"><view class="muted">本月结余</view><view class="balance">¥ {{money(total.income-total.expense)}}</view><view class="divider"/><view class="row"><view><text class="muted">收入</text><view class="amount income">{{money(total.income)}}</view></view><view><text class="muted">支出</text><view class="amount">{{money(total.expense)}}</view></view><view><text class="muted">记录</text><view class="amount">{{monthly.length}} 笔</view></view></view></view><view class="row section"><text>分类占比</text><view class="chips"><view class="chip" :class="{active:kind==='expense'}" @tap="kind='expense'">支出</view><view class="chip" :class="{active:kind==='income'}" @tap="kind='income'">收入</view></view></view><view class="card"><view v-if="!groups.length" class="empty">这个月还没有{{kind==='expense'?'支出':'收入'}}记录<view class="small">记录后，这里会展示分类统计</view></view><view v-for="item in groups" :key="item.name" class="group"><view class="row"><text>{{item.name}} <text class="muted small">{{item.percent}}%</text></text><text>¥ {{money(item.cents)}}</text></view><view class="track"><view class="bar" :style="{width:item.percent+'%'}"/></view></view></view><view class="muted note">统计根据所选月份的账单日期计算。</view></view></template>
+<style scoped>.title{font-size:36rpx}.balance{font-size:58rpx;font-weight:600;margin-top:22rpx}.group{margin:16rpx 0 32rpx}.group:last-child{margin-bottom:4rpx}.track{height:14rpx;border-radius:12rpx;background:#eef3e9;margin-top:20rpx;overflow:hidden}.bar{height:100%;background:#6c9872;border-radius:12rpx}.note{font-size:22rpx;text-align:center;margin-top:24rpx}</style>
