@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useNavigationIcons } from '@/services/navigation'
+useNavigationIcons()
 import { useProtectedPage } from '@/services/auth'
 const { authenticated, currentUserLabel } = useProtectedPage()
 import { computed } from 'vue'

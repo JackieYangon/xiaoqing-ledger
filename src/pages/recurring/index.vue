@@ -14,7 +14,7 @@ import {
   refreshWorkspace,
   schedulerStatus,
 } from '@/services/ledger'
-import { categoryOptions, parseMoney, money } from '@/core/ledger'
+import { categoryOptions, parseMoney, money, today } from '@/core/ledger'
 const { authenticated } = useProtectedPage()
 const name = ref(''),
   amount = ref(''),
@@ -24,9 +24,12 @@ const name = ref(''),
   category = ref('居家'),
   busy = ref(false)
 const categories = computed(() => categoryOptions(state.value, 'expense'))
-const days = computed(() =>
-  Array.from({ length: frequency.value === 'monthly' ? 31 : 7 }, (_, i) => String(i + 1)),
-)
+const selectedDate = ref(today().slice(0, 7) + '-01')
+const weekdays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
+function changeDate(e: any) {
+  selectedDate.value = e.detail.value
+  day.value = Number(selectedDate.value.slice(-2))
+}
 onShow(async () => {
   if (!authenticated.value) return
   try {
@@ -38,7 +41,7 @@ onShow(async () => {
 })
 function changeFrequency(e: any) {
   frequency.value = Number(e.detail.value) === 0 ? 'monthly' : 'weekly'
-  day.value = 1
+  day.value = frequency.value === 'monthly' ? Number(selectedDate.value.slice(-2)) : 1
 }
 async function save() {
   if (busy.value) return
@@ -148,11 +151,20 @@ function record(rule: any) {
       <picker :range="['每月', '每周']" @change="changeFrequency">
         <view class="input book">周期：{{ frequency === 'monthly' ? '每月' : '每周' }} ▾</view>
       </picker>
-      <picker :range="days" :value="day - 1" @change="day = Number($event.detail.value) + 1">
-        <view class="input book">
-          {{ frequency === 'monthly' ? '每月日期' : '星期（1 为周一）' }}：{{ day }} ▾
-        </view>
+      <picker v-if="frequency === 'monthly'" mode="date" :value="selectedDate" @change="changeDate">
+        <view class="input book">记账日期：每月 {{ day }} 日 ▾</view>
       </picker>
+      <picker
+        v-else
+        :range="weekdays"
+        :value="day - 1"
+        @change="day = Number($event.detail.value) + 1"
+      >
+        <view class="input book">记账日期：每周{{ weekdays[day - 1].slice(2) }} ▾</view>
+      </picker>
+      <view v-if="frequency === 'monthly'" class="muted small notice">
+        点击选择日期，按所选日期的“几号”每月重复，年月不作为开始日期；短月份自动取月底。
+      </view>
       <picker :range="categories" @change="category = categories[Number($event.detail.value)]">
         <view class="input book">分类：{{ category }} ▾</view>
       </picker>
