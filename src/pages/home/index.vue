@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { today, money, summarize, inMonth, budgetProgress } from '@/core/ledger'
@@ -51,6 +53,7 @@ function all() {
 onShow(refresh)
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="row">
       <text class="eyebrow">XIAOQING · DAILY LEDGER</text>
@@ -134,6 +137,7 @@ onShow(refresh)
     </view>
     <view class="footnote">认真记录，也好好生活。</view>
   </view>
+  </template>
 </template>
 <style scoped>
 .hero {

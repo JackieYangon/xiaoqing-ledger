@@ -1,3 +1,4 @@
+import { assertLoggedIn, requireLogin, onSessionReset, authenticatedCall, currentUser } from './auth'
 import { computed, ref } from 'vue'
 import {
   createRepository,
@@ -8,16 +9,16 @@ import {
   type Budget,
 } from '@/core/ledger'
 import { createCloudClient } from '@/core/cloud-client'
-import { cloudEnabled, callLedger } from './cloud-transport'
+import { cloudEnabled } from './cloud-transport'
 import { CLOUD_ENV } from '@/config/cloud'
 export { cloudEnabled }
 const KEY = 'xiaoqing.ledger.v1'
 export const localRepository = createRepository({
-  read: () => uni.getStorageSync(KEY),
-  write: (value) => uni.setStorageSync(KEY, value),
+  read: () => { assertLoggedIn(); return uni.getStorageSync(KEY) },
+  write: (value) => { assertLoggedIn(); uni.setStorageSync(KEY, value) },
 })
-const client = createCloudClient(
-  callLedger,
+const makeClient = () => createCloudClient(
+  authenticatedCall,
   {
     get: (key) => uni.getStorageSync(key),
     set: (key, value) => uni.setStorageSync(key, value),
@@ -25,6 +26,7 @@ const client = createCloudClient(
   },
   CLOUD_ENV,
 )
+let client = makeClient()
 export const state = ref(emptyState()),
   entries = computed(() => state.value.entries),
   loadError = ref('')
@@ -49,6 +51,14 @@ export const storageLabel = computed(
 export const saveMessage = computed(() => (cloudEnabled ? '已保存到云端' : '已保存到本机'))
 export const recordFilter = ref<{ month: string; kind: Kind; category: string } | null>(null)
 let refreshTask: Promise<boolean> | null = null
+onSessionReset(() => {
+  client = makeClient()
+  state.value = emptyState()
+  accountId.value = ''; lastSync.value = ''; loadError.value = ''
+  pendingOperation.value = false; canDiscardPending.value = false
+  syncBusy.value = false; syncStatus.value = 'connecting'
+  recordFilter.value = null; refreshTask = null
+})
 function capturePending() {
   canDiscardPending.value = client.canDiscard()
   try {
@@ -58,12 +68,15 @@ function capturePending() {
   }
 }
 function snapshotRepository() {
+  assertLoggedIn()
   if (cloudEnabled && !client.getSnapshot()) throw new Error('尚未连接云端，请先到「云同步」连接')
   let raw = JSON.stringify(state.value)
   return createRepository({ read: () => raw, write: (value) => (raw = value) })
 }
 async function fetchCloud() {
-  const snapshot = await client.load()
+  const activeClient = client
+  const snapshot = await activeClient.load()
+  if (client !== activeClient || snapshot.accountId !== currentUser.value?.accountId) throw new Error('登录状态已变化')
   state.value = snapshot.state
   accountId.value = snapshot.accountId
   loadError.value = ''
@@ -78,6 +91,8 @@ function report(e: unknown) {
   capturePending()
 }
 export function refresh(): Promise<boolean> {
+  if (!requireLogin()) return Promise.resolve(false)
+  const activeClient = client
   if (refreshTask) return refreshTask
   if (syncBusy.value) return Promise.resolve(false)
   refreshTask = (async () => {
@@ -92,16 +107,20 @@ export function refresh(): Promise<boolean> {
       }
       return true
     } catch (e) {
-      report(e)
+      if (client === activeClient) report(e)
       return false
     } finally {
-      refreshTask = null
+      if (client === activeClient) refreshTask = null
     }
   })()
   return refreshTask
 }
 async function write(operation: string, args: any, local: () => any) {
+  assertLoggedIn()
+  const activeClient = client
   if (refreshTask) await refreshTask
+  assertLoggedIn()
+  if (client !== activeClient) throw new Error('登录状态已变化')
   if (syncBusy.value) throw new Error('正在处理上一项操作，请稍后再试')
   if (!cloudEnabled) {
     const result = local()
@@ -111,18 +130,19 @@ async function write(operation: string, args: any, local: () => any) {
   syncBusy.value = true
   syncStatus.value = 'saving'
   try {
-    const result = await client.mutate(operation, args)
+    const result = await activeClient.mutate(operation, args)
+    if (client !== activeClient) throw new Error('登录状态已变化')
     try {
       await fetchCloud()
     } catch (e) {
-      report(new Error('云端已保存，但刷新失败。请同步确认后继续：' + errorMessage(e)))
+      if (client === activeClient) report(new Error('云端已保存，但刷新失败。请同步确认后继续：' + errorMessage(e)))
     }
     return result
   } catch (e) {
-    report(e)
+    if (client === activeClient) report(e)
     throw e
   } finally {
-    syncBusy.value = false
+    if (client === activeClient) syncBusy.value = false
   }
 }
 export const repository = {
@@ -147,6 +167,7 @@ export const repository = {
   previewImport: (text: string) =>
     cloudEnabled ? snapshotRepository().previewImport(text) : localRepository.previewImport(text),
   async importBackup(text: string) {
+    assertLoggedIn()
     if (!cloudEnabled) return write('unused', {}, () => localRepository.importBackup(text))
     const source = parseBackup(text),
       totals = { added: 0, skipped: 0, conflicts: 0 }
@@ -172,11 +193,13 @@ export const repository = {
   },
 }
 export async function discardPending() {
+  assertLoggedIn()
   client.discardPending()
   capturePending()
   await refresh()
 }
 export function pendingText() {
+  assertLoggedIn()
   return JSON.stringify(client.pending(), null, 2)
 }
 export function errorMessage(e: unknown) {

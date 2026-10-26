@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { today, toCsv, inMonth } from '@/core/ledger'
@@ -79,6 +81,7 @@ function restore() {
 }
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="title compact-title">让记录有备份</view>
     <view class="subtitle">导出一份安心，需要时再恢复。</view>
@@ -139,6 +142,7 @@ function restore() {
       }}
     </view>
   </view>
+  </template>
 </template>
 <style scoped>
 .compact-title {

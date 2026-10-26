@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import {
@@ -65,6 +67,7 @@ function spent(name: string) {
 }
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="row">
       <view class="title compact-title">给开销一点计划</view>
@@ -124,6 +127,7 @@ function spent(name: string) {
       保存预算
     </button>
   </view>
+  </template>
 </template>
 <style scoped>
 .compact-title {

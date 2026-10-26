@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { categoryOptions, today, money, calculateMoney, type Kind } from '@/core/ledger'
@@ -46,7 +48,11 @@ const calculated = computed(() => {
 onShow(refresh)
 onLoad(async (args) => {
   busy.value = true
-  await refresh()
+  if (!(await refresh())) {
+    busy.value = false
+    invalid.value = true
+    return
+  }
   if (args?.date) date.value = String(args.date)
   if (args?.id) {
     id.value = String(args.id)
@@ -151,7 +157,10 @@ function remove() {
 }
 </script>
 <template>
+  <template v-if="authenticated">
+    <view class="muted small" style="padding: 24rpx 32rpx 0">记账人：{{ currentUserLabel }}</view>
   <view class="page entry-page">
+    <view v-if="invalid" class="error">账单未能加载，请返回同步后重新打开。</view>
     <view class="row">
       <view class="title compact">{{ id ? '编辑这一笔' : '记下生活的一笔' }}</view>
       <button v-if="id" class="text-btn" @tap="copy">再记一笔</button>
@@ -231,6 +240,7 @@ function remove() {
     <button v-if="id" class="danger" :disabled="busy || invalid" @tap="remove">删除账单</button>
     <view class="hint muted">{{ storageLabel }}</view>
   </view>
+  </template>
 </template>
 <style scoped>
 .compact {

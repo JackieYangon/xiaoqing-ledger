@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { onLaunch } from '@dcloudio/uni-app'
-onLaunch(() => {})
+import { onLaunch, onShow } from '@dcloudio/uni-app'
+import { installAuthGuards, resumeSession } from '@/services/auth'
+onLaunch(installAuthGuards)
+onShow(resumeSession)
 </script>
 <style>
 page {

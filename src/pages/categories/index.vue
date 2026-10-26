@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { categories, type Kind } from '@/core/ledger'
@@ -40,6 +42,7 @@ function remove(value: string) {
 }
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="title compact-title">让分类更懂你</view>
     <view class="subtitle">为咖啡、宠物或旅行，留一个专属位置。</view>
@@ -73,6 +76,7 @@ function remove(value: string) {
     </view>
     <view class="muted small tip">默认分类保留，避免影响历史账单。</view>
   </view>
+  </template>
 </template>
 <style scoped>
 .compact-title {

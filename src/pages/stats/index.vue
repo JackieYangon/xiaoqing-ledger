@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
@@ -77,6 +79,7 @@ function drill(name: string) {
 onShow(refresh)
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="eyebrow">A LITTLE MORE CLARITY</view>
     <view class="row">
@@ -191,6 +194,7 @@ onShow(refresh)
       </view>
     </view>
   </view>
+  </template>
 </template>
 <style scoped>
 .compact-title {

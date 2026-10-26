@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage, logout } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
@@ -13,12 +15,13 @@ const days = computed(() => new Set(entries.value.map((e) => e.date)).size)
 onShow(refresh)
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="brand">
       <image class="logo" src="/static/avatar.png" mode="aspectFill" />
       <view>
         <view class="title">小青账本</view>
-        <view class="subtitle">认真记录，也好好生活。</view>
+        <view class="subtitle">{{ currentUserLabel }}</view>
       </view>
     </view>
     <view class="card">
@@ -77,14 +80,16 @@ onShow(refresh)
     </view>
     <view class="card">
       <view class="section heading">关于小青</view>
-      <view class="muted">当前版本 0.3.0 · 微信云开发版</view>
+      <view class="muted">当前版本 0.4.0 · 微信登录云同步版</view>
       <view class="divider" />
       <view class="muted small">
-        快速记账、预算计划、收支日历与趋势统计。微信端通过云函数保存账本，网页预览不与微信数据互通。
+        快速记账、预算计划、收支日历与趋势统计。微信端通过云函数保存账本，请使用当前微信账号登录后操作。
       </view>
     </view>
+    <button class="secondary" style="margin-top: 32rpx" @tap="logout">退出登录</button>
     <view class="footer">小小的一笔，也是生活的印记。</view>
   </view>
+  </template>
 </template>
 <style scoped>
 .brand {

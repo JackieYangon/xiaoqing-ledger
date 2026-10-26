@@ -58,6 +58,23 @@ function createHandler(db) {
       const owner = hash(context.APPID + ':' + context.OPENID)
       const bookRef = db.collection(COLLECTIONS.books).doc(owner)
       const action = event?.action
+      const sessions = db.collection(COLLECTIONS.requests)
+      if (action === 'login') {
+        const token = crypto.randomBytes(32).toString('hex')
+        const expiresAt = Date.now() + 24 * 60 * 60 * 1000
+        await sessions.doc('session_' + hash(token)).set({ data: { owner, expiresAt, type: 'session' } })
+        return { ok: true, accountId: owner, token, expiresAt }
+      }
+      if (!/^[a-f0-9]{64}$/.test(event?.token || '')) fail('AUTH', '请先使用微信登录')
+      const sessionRef = sessions.doc('session_' + hash(event.token))
+      const session = await get(sessionRef)
+      if (!session || session.type !== 'session' || session.owner !== owner || session.expiresAt <= Date.now())
+        fail('AUTH', '登录已失效，请重新登录')
+      if (action === 'logout') {
+        await sessionRef.remove()
+        return { ok: true, accountId: owner }
+      }
+      if (action === 'session') return { ok: true, accountId: owner, expiresAt: session.expiresAt }
       if (action !== 'read' && event.accountId !== owner)
         fail('AUTH', '微信身份发生变化，请重新打开小程序')
       if (action === 'read') {

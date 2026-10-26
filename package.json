@@ -1,13 +1,13 @@
 {
   "name": "xiaoqing-ledger",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "scripts": {
     "dev:mp-weixin": "uni -p mp-weixin",
     "build:mp-weixin": "uni build -p mp-weixin",
     "dev:h5": "uni --host 127.0.0.1",
     "build:h5": "uni build",
     "type-check": "vue-tsc --noEmit",
-    "test": "node scripts/build-cloud.cjs && node tests/ledger.test.cjs && node tests/cloud.test.cjs",
+    "test": "node scripts/build-cloud.cjs && node tests/ledger.test.cjs && node tests/cloud.test.cjs && node tests/auth.test.cjs",
     "build:cloud": "node scripts/build-cloud.cjs"
   },
   "dependencies": {

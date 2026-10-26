@@ -74,9 +74,19 @@ function mockDB() {
   return db
 }
 const db = mockDB(),
-  handler = createHandler(db),
+  rawHandler = createHandler(db),
   A = { OPENID: 'user-a', APPID: APP_ID },
   B = { OPENID: 'user-b', APPID: APP_ID }
+const testTokens = new Map()
+async function handler(event, context) {
+  if (!context?.OPENID || context.APPID !== APP_ID) return rawHandler(event, context)
+  if (!testTokens.has(context.OPENID)) {
+    const login = await rawHandler({ action: 'login' }, context)
+    assert.equal(login.ok, true)
+    testTokens.set(context.OPENID, login.token)
+  }
+  return rawHandler({ ...event, token: testTokens.get(context.OPENID) }, context)
+}
 let serial = 0
 async function meta(context = A) {
   const result = await handler({ action: 'read' }, context)
@@ -142,6 +152,25 @@ function memoryStorage() {
 ;(async () => {
   assert.equal((await handler({ action: 'read' }, {})).code, 'AUTH')
   assert.equal((await handler({ action: 'read' }, { ...A, APPID: 'wrong' })).code, 'AUTH')
+  // The actual handler (without test login helper) must reject every protected action.
+  for (const action of ['read', 'page', 'mutate', 'session', 'logout'])
+    assert.equal((await rawHandler({ action }, A)).code, 'AUTH')
+  assert.equal((await rawHandler({ action: 'login' }, {})).code, 'AUTH')
+  const signedIn = await rawHandler({ action: 'login' }, A)
+  assert.equal(signedIn.ok, true)
+  assert.match(signedIn.token, /^[a-f0-9]{64}$/)
+  assert.equal((await rawHandler({ action: 'read', token: signedIn.token }, B)).code, 'AUTH')
+  assert.equal((await rawHandler({ action: 'read', token: 'f'.repeat(64) }, A)).code, 'AUTH')
+  assert.equal((await rawHandler({ action: 'session', token: signedIn.token }, A)).accountId, signedIn.accountId)
+  assert.equal((await rawHandler({ action: 'logout', token: signedIn.token }, A)).ok, true)
+  assert.equal((await rawHandler({ action: 'read', token: signedIn.token }, A)).code, 'AUTH')
+  const expired = await rawHandler({ action: 'login' }, A)
+  const hash = require('node:crypto').createHash('sha256').update(expired.token).digest('hex')
+  db.all().get('xq_requests/session_' + hash).expiresAt = 1
+  assert.equal((await rawHandler({ action: 'read', token: expired.token }, A)).code, 'AUTH')
+  // A new login on a second device does not change the owner of an existing account.
+  const secondLogin = await rawHandler({ action: 'login' }, A)
+  assert.equal(secondLogin.accountId, signedIn.accountId)
   const first = await mutate('save', { draft, createId: 'entry_stable_test_1' })
   assert.equal(first.ok, true)
   assert.equal(first.result.cents, 2500)

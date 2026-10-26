@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { today, money, summarize, groupDays, calendar, categoryOptions } from '@/core/ledger'
@@ -64,6 +66,7 @@ onShow(() => {
 })
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="row">
       <view class="title compact-title">收支明细</view>
@@ -139,6 +142,7 @@ onShow(() => {
       <BillList :items="group.entries" />
     </view>
   </view>
+  </template>
 </template>
 <style scoped>
 .compact-title {

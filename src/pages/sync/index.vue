@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useProtectedPage } from '@/services/auth'
+const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { CLOUD_ENV } from '@/config/cloud'
@@ -39,6 +41,7 @@ function readLocal() {
   }
 }
 onShow(async () => {
+  if (!authenticated.value) return
   readLocal()
   await refresh()
 })
@@ -106,6 +109,7 @@ function discard() {
 }
 </script>
 <template>
+  <template v-if="authenticated">
   <view class="page">
     <view class="title compact-title">记录，随你而行</view>
     <view class="subtitle">同一个微信账号，连接同一份云端账本。</view>
@@ -167,6 +171,7 @@ function discard() {
       <view class="muted small detail">环境：{{ CLOUD_ENV }}</view>
     </view>
   </view>
+  </template>
 </template>
 <style scoped>
 .compact-title {
