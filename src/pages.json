@@ -78,6 +78,12 @@
       "style": {
         "navigationBarTitleText": "定期记账"
       }
+    },
+    {
+      "path": "pages/desktop-login/index",
+      "style": {
+        "navigationBarTitleText": "确认电脑登录"
+      }
     }
   ],
   "globalStyle": {

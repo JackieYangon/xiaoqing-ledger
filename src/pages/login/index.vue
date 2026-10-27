@@ -3,12 +3,19 @@ import { onShow, onLoad } from '@dcloudio/uni-app'
 import { authenticated, authStatus, authError, login } from '@/services/auth'
 import { cloudEnabled } from '@/services/cloud-transport'
 let invite = ''
+let desktop = ''
 onLoad((args) => {
+  if (typeof args?.desktop === 'string' && /^[a-f0-9]{24}$/.test(args.desktop))
+    desktop = args.desktop
   if (typeof args?.invite === 'string' && /^[A-Fa-f0-9]{16}$/.test(args.invite))
     invite = args.invite
 })
 function destination() {
-  return invite ? '/pages/groups/index?invite=' + invite : '/pages/home/index'
+  return desktop
+    ? '/pages/desktop-login/index?scene=' + desktop
+    : invite
+      ? '/pages/groups/index?invite=' + invite
+      : '/pages/home/index'
 }
 async function signIn() {
   if (await login()) uni.reLaunch({ url: destination() })

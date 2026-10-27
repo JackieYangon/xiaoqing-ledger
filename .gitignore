@@ -16,3 +16,7 @@ Thumbs.db
 /src/manifest.json
 /src/config/cloud.local.ts
 /cloudfunctions/ledger/local-config.json
+# Generated copies of ledger code for the separately deployed HTTP function.
+/cloudfunctions/desktop-gateway/ledger/
+/desktop/config.local.json
+/release/

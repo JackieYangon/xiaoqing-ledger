@@ -90,7 +90,7 @@ Windows shortcuts are also available:
 .\dev.ps1 -Target h5
 ```
 
-The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 is a sign-in preview only, not a usable browser ledger. A desktop EXE has not been implemented.
+The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 is a sign-in preview only, not a usable browser ledger. A desktop EXE is available as a development build; QR sign-in requires a separately configured HTTPS gateway and real-device acceptance testing before production use.
 
 ## Checks and builds
 

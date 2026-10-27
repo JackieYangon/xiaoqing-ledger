@@ -146,7 +146,7 @@ node scripts/check-mp-quality.cjs dist/dev/mp-weixin
 
 ## 数据与升级
 
-微信小程序必须登录后才能使用，以云端账本为准；网页 H5 只显示登录提示，不提供本地账本入口。电脑端 EXE 尚未实现。
+微信小程序必须登录后才能使用，以云端账本为准；网页 H5 只显示登录提示，不提供本地账本入口。电脑端 EXE 目前提供开发测试版本；扫码登录仍需要单独部署并配置电脑端 HTTPS 网关，完成真机端到端验收后才可正式使用。
 
 旧版数据仍保留在 `xiaoqing.ledger.v1`，支持 schema 1/2。在「我的 → 云同步」先复制旧本地备份，再确认「迁移」到当前微信账号。迁移不会自动执行，也不会删除原本地数据。换手机前必须确认旧记录已经迁移并显示同步成功。
 
@@ -196,3 +196,21 @@ pnpm setup:local
 `.env.local`、`project.config.json`、`src/manifest.json`、`src/config/cloud.local.ts` 和 `cloudfunctions/ledger/local-config.json` 均为本地文件，不提交 Git。构建及开发命令会自动从本地环境生成配置；共享配置请修改 `project.config.template.json` 和 `src/manifest.template.json`。云函数部署前先执行 `pnpm setup:local`，将生成的云函数本地配置一起部署，或在云函数环境变量中设置 `XQ_APP_ID`。缺少 AppID 时云函数拒绝业务请求，不会跳过身份校验。
 
 AppID 和云环境 ID 是路由标识，不是访问密钥，但公开仓库不包含维护者的实际部署值。不要提交 AppSecret、访问令牌、私钥、云服务密钥、账单导出或包含个人信息的截图；不要将密钥写入任何前端环境变量。历史提交中的信息不会因普通删除提交消失，历史清理与密钥轮换需单独处理。
+
+## 电脑端开发与部署（待验收）
+
+电脑端由 Electron 和独立 Vue 页面构成，复用账本金额、分类、同步与并发校验。打开电脑端后获取一次性小程序码，手机在小程序确认并核对六位数字，电脑获得独立、短期有效的云端会话；关联同一小程序账号和群组账本。电脑端目前支持账单、总预算、分类、群组、定期项目；分类预算编辑、资料修改、账单备份导出等仍需小程序端操作。
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build:desktop-gateway
+pnpm desktop
+pnpm package:desktop
+```
+
+Electron 45 开发与打包需要 Node.js 22.12 或更高版本。桌面窗口的请求只连接 `.env.local` 中 `XQ_DESKTOP_API_URL` 指定的 HTTPS 网关；打包前配置该地址，再重新执行 `pnpm package:desktop`。生成的 `release/` 和本地配置均不提交到 Git。安装包为未签名测试版。
+
+部署前需：①在相同云环境部署更新后的 `ledger` 和独立的 `desktop-gateway`；②只为 `desktop-gateway` 创建 HTTPS 网关，禁止将原 `ledger` 云函数暴露为匿名 HTTP；③仅在云函数服务端环境变量配置 `XQ_WECHAT_APP_SECRET`，不要填写到 `.env.local`、仓库、安装包或聊天消息中；④按小程序代码版本设置 `XQ_MINI_ENV` 为 `release`、`trial` 或 `develop`，并确保对应版本已包含 `pages/desktop-login/index`；⑤在网关层配置请求频率与配额限制，保护未登录的二维码生成接口免于滥用。服务端需能访问微信接口，且满足微信接口的 IP 白名单等平台配置。
+
+将网关 URL 作为 `XQ_DESKTOP_API_URL` 配置在本机 `.env.local` 后构建安装包。AppSecret 只属于服务端，不要发送给他人。完整验收应使用两台真实设备与两个微信账号，验证登录确认、取消/过期/重放、账号和群组隔离、写入去重、网络中断恢复、退出及小程序已有账本兼容。模拟测试不等于真实云端验收。

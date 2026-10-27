@@ -72,19 +72,20 @@ function checkSize(data) {
   if (Buffer.byteLength(JSON.stringify(data), 'utf8') > 600000)
     fail('LIMIT', '设置数据过大，请先导出备份并联系维护者')
 }
-function createHandler(db, services = {}) {
+function createHandler(db, services = {}, desktopOwner = null) {
   const features = createFeatures(db, services)
   return async (event, context) => {
     try {
-      if (!APP_ID || !context?.OPENID || context.APPID !== APP_ID)
+      if (!APP_ID || (!desktopOwner && (!context?.OPENID || context.APPID !== APP_ID)))
         fail('AUTH', '请从小青账本微信小程序访问')
-      const owner = hash(context.APPID + ':' + context.OPENID)
+      if (desktopOwner && !/^[a-f0-9]{64}$/.test(desktopOwner)) fail('AUTH', '电脑会话无效')
+      const owner = desktopOwner || hash(context.APPID + ':' + context.OPENID)
       const scope = event.bookId || owner
       if (scope !== owner && !/^group_[a-f0-9]{32}$/.test(scope)) fail('VALIDATION', '账本标识无效')
       const bookRef = db.collection(COLLECTIONS.books).doc(scope)
       const action = event?.action
       const sessions = db.collection(COLLECTIONS.requests)
-      if (action === 'login') {
+      if (action === 'login' && !desktopOwner) {
         const token = crypto.randomBytes(32).toString('hex')
         const expiresAt = Date.now() + 24 * 60 * 60 * 1000
         await sessions
@@ -103,7 +104,7 @@ function createHandler(db, services = {}) {
       const session = await get(sessionRef)
       if (
         !session ||
-        session.type !== 'session' ||
+        session.type !== (desktopOwner ? 'desktop_session' : 'session') ||
         session.owner !== owner ||
         session.expiresAt <= Date.now()
       )
@@ -111,6 +112,11 @@ function createHandler(db, services = {}) {
       if (action === 'logout') {
         await sessionRef.remove()
         return { ok: true, accountId: owner }
+      }
+      if (action === 'desktopConfirm') {
+        if (desktopOwner) fail('FORBIDDEN', '仅小程序可确认电脑登录')
+        const { confirmDesktop } = require('./desktop-auth')
+        return await confirmDesktop(db, owner, event.scene, event.decision)
       }
       if (action === 'session') return { ok: true, accountId: owner, expiresAt: session.expiresAt }
       if (
