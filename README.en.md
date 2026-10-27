@@ -3,7 +3,7 @@
 <p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
 <p align="center"><a href="README.md">简体中文</a> · <b>English</b></p>
 <p align="center">
-  <a href="#features"><img src="https://img.shields.io/badge/version-1.0.0-237859?style=flat-square" alt="Version 1.0.0" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/version-1.0.1-237859?style=flat-square" alt="Version 1.0.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
@@ -11,7 +11,7 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
 <p align="center"><a href="#screenshots">Screenshots</a> · <a href="#demo">Live demo GIF</a> · <a href="#features">Features</a> · <a href="#getting-started">Getting started</a> · <a href="#deploying-cloud-development">Cloud deployment</a></p>
-<p align="center">Version 1.0.0 · Personal & group books · Cloud sync · Recurring records</p>
+<p align="center">Version 1.0.1 · Personal & group books · Cloud sync · Recurring records</p>
 
 <a name="screenshots"></a>
 <h2 align="center">A look inside</h2>
@@ -44,6 +44,8 @@
 The interface is currently in Simplified Chinese; this README provides English setup and usage instructions. Media excludes personal profiles, transaction details, invitation codes and deployment identifiers. Files in `docs/images/` are not included in the mini program package.
 
 ---
+
+Download the Windows preview from [GitHub Releases](https://github.com/JackieYangon/xiaoqing-ledger/releases). Desktop v1.0.1 uses the trial mini program and requires WeChat trial access. See the [release notes](docs/releases/v1.0.1.md).
 
 ## Features
 

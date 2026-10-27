@@ -1,6 +1,6 @@
 {
   "name": "xiaoqing-ledger",
-  "version": "0.5.0",
+  "version": "1.0.1",
   "scripts": {
     "dev:mp-weixin": "node scripts/prepare-local-config.cjs && uni -p mp-weixin",
     "build:mp-weixin": "node scripts/prepare-local-config.cjs && uni build -p mp-weixin && node scripts/check-mp-quality.cjs",
@@ -65,7 +65,7 @@
       "allowToChangeInstallationDirectory": true
     },
     "extraMetadata": {
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   },
   "description": "小青账本桌面版",

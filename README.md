@@ -3,15 +3,15 @@
 <p align="center"><b>把日子，记清楚。</b><br />基于 uni-app、Vue 3 和 TypeScript 的微信记账小程序。</p>
 <p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
 <p align="center">
-  <a href="#100-主要功能"><img src="https://img.shields.io/badge/version-1.0.0-237859?style=flat-square" alt="Version 1.0.0" /></a>
+  <a href="#101-主要功能"><img src="https://img.shields.io/badge/version-1.0.1-237859?style=flat-square" alt="Version 1.0.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white" alt="Vue 3" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
-<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#100-主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
-<p align="center">版本 1.0.0 · 个人 / 群组账本 · 云端同步 · 定期记账</p>
+<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#101-主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
+<p align="center">版本 1.0.1 · 个人 / 群组账本 · 云端同步 · 定期记账</p>
 
 <a name="screenshots"></a>
 <h2 align="center">界面预览</h2>
@@ -45,7 +45,9 @@
 
 ---
 
-## 1.0.0 主要功能
+电脑端下载见 [GitHub Releases](https://github.com/JackieYangon/xiaoqing-ledger/releases)。v1.0.1 电脑端为体验测试版，需要微信体验权限；发布说明见 [v1.0.1](docs/releases/v1.0.1.md)。
+
+## 1.0.1 主要功能
 
 - **微信资料**：「我的」点击头像/昵称进入资料页，选择头像并使用微信昵称填写框，确认后保存。账号唯一性仍由微信身份决定，昵称不能用来切换或冒用账号。资料保存后，新账单记录当时的记账人资料。
 - **账本切换**：「我的 → 切换账本」选择个人或已加入群组。首页、账单、统计和预算都随账本切换，记账页显示当前账本。个人记录不会自动共享；旧本地迁移仅允许迁入个人账本。
