@@ -19,7 +19,7 @@
     "ignore": [],
     "include": []
   },
-  "appid": "YOUR_APP_ID",
+  "appid": "",
   "editorSetting": {},
   "miniprogramRoot": "dist/dev/mp-weixin/",
   "cloudfunctionRoot": "cloudfunctions/"

@@ -84,7 +84,7 @@ pnpm build:h5
 
 查询使用 `xq_entries` 的 owner 条件与 _id 升序分页。数据量增长或控制台提示缺少索引时，为此集合建立 owner 升序、_id 升序的复合索引。
 
-更换环境需修改 `src/config/cloud.ts` 并重新构建。更换 AppID 时还需修改云函数 `handler.js` 的 APP_ID 并重新部署。无需在前端填写 AppSecret。
+更换环境或 AppID 请修改未跟踪的 `.env.local` 并运行 `pnpm setup:local`，重新构建并部署云函数。无需填写 AppSecret。
 
 ## 定时触发器部署
 
@@ -133,3 +133,18 @@ pnpm build:h5
 选择 MIT 是为了保持应用代码的使用和分发条款简洁。Apache License 2.0 包含明确的专利授权及相关终止条款，本项目目前继续沿用 MIT，不因使用 Apache-2.0 依赖而更改原创代码的许可。
 
 第三方依赖仍遵循各自许可证：直接依赖中的 uni-app 相关包使用 Apache-2.0，Vue、vue-i18n 和微信云开发 wx-server-sdk 使用 MIT。分发第三方代码时应保留对应许可证、版权声明及适用的 NOTICE；本项目的 MIT 许可证不替代第三方许可要求，也不授权访问用户账单、头像等个人数据。
+
+## 本地部署配置与公开仓库
+
+首次克隆后执行：
+
+```powershell
+pnpm install --frozen-lockfile
+Copy-Item .env.example .env.local
+# 在 .env.local 填入自己的 XQ_APP_ID 和 XQ_CLOUD_ENV
+pnpm setup:local
+```
+
+`.env.local`、`project.config.json`、`src/manifest.json`、`src/config/cloud.local.ts` 和 `cloudfunctions/ledger/local-config.json` 均为本地文件，不提交 Git。构建及开发命令会自动从本地环境生成配置；共享配置请修改 `project.config.template.json` 和 `src/manifest.template.json`。云函数部署前先执行 `pnpm setup:local`，将生成的云函数本地配置一起部署，或在云函数环境变量中设置 `XQ_APP_ID`。缺少 AppID 时云函数拒绝业务请求，不会跳过身份校验。
+
+AppID 和云环境 ID 是路由标识，不是访问密钥，但公开仓库不包含维护者的实际部署值。不要提交 AppSecret、访问令牌、私钥、云服务密钥、账单导出或包含个人信息的截图；不要将密钥写入任何前端环境变量。历史提交中的信息不会因普通删除提交消失，历史清理与密钥轮换需单独处理。

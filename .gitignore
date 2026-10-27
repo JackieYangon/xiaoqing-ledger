@@ -10,3 +10,9 @@ project.private.config.json
 *.log
 .DS_Store
 Thumbs.db
+
+# Generated deployment configuration: run pnpm setup:local
+/project.config.json
+/src/manifest.json
+/src/config/cloud.local.ts
+/cloudfunctions/ledger/local-config.json

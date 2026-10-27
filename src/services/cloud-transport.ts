@@ -8,6 +8,7 @@ cloudEnabled = true
 let initialized = false
 export async function callLedger(event: any) {
   // #ifdef MP-WEIXIN
+  if (!CLOUD_ENV) throw new Error('请先在 .env.local 配置云环境并重新构建')
   if (!wx.cloud) throw new Error('当前微信版本不支持云开发，请升级微信')
   if (!initialized) {
     wx.cloud.init({ env: CLOUD_ENV, traceUser: false })

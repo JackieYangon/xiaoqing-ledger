@@ -1,3 +1,4 @@
+process.env.XQ_APP_ID = 'wx0000000000000000' // Synthetic test identity.
 const assert = require('node:assert/strict')
 const { mockDB } = require('./mock-db.cjs')
 const { createHandler, APP_ID } = require('../cloudfunctions/ledger/handler')

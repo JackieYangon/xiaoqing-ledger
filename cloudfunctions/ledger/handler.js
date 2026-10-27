@@ -7,7 +7,13 @@ const {
   categoryOptions,
   createRepository,
 } = require('./core.cjs')
-const APP_ID = 'YOUR_APP_ID'
+let localConfig = {}
+try {
+  localConfig = require('./local-config.json')
+} catch (e) {
+  if (e.code !== 'MODULE_NOT_FOUND') throw e
+}
+const APP_ID = process.env.XQ_APP_ID || localConfig.appid || ''
 const COLLECTIONS = { books: 'xq_books', entries: 'xq_entries', requests: 'xq_requests' }
 const hash = (value) => crypto.createHash('sha256').update(value).digest('hex')
 class Fault extends Error {
@@ -70,7 +76,8 @@ function createHandler(db, services = {}) {
   const features = createFeatures(db, services)
   return async (event, context) => {
     try {
-      if (!context?.OPENID || context.APPID !== APP_ID) fail('AUTH', '请从小青账本微信小程序访问')
+      if (!APP_ID || !context?.OPENID || context.APPID !== APP_ID)
+        fail('AUTH', '请从小青账本微信小程序访问')
       const owner = hash(context.APPID + ':' + context.OPENID)
       const scope = event.bookId || owner
       if (scope !== owner && !/^group_[a-f0-9]{32}$/.test(scope)) fail('VALIDATION', '账本标识无效')
