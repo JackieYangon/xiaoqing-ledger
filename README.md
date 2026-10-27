@@ -1,5 +1,7 @@
 # 小青账本
 
+**简体中文** | [English](README.en.md)
+
 [![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-237859?style=flat-square)](#100-主要功能)
 [![License MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Platform WeChat Mini Program](https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&logo=wechat&logoColor=white)](https://developers.weixin.qq.com/miniprogram/dev/framework/)
@@ -8,6 +10,22 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 基于 uni-app + Vue 3 + TypeScript 的微信记账小程序。当前版本 **1.0.0**。
+
+## 界面预览
+
+以下素材来自实际运行的小程序，未包含真实头像、昵称、账单明细、邀请码或部署标识。
+
+| 微信登录 | 分类管理 | 每月定期记账 |
+| :---: | :---: | :---: |
+| <img src="docs/images/login.png" width="240" alt="微信登录页" /> | <img src="docs/images/categories.png" width="240" alt="所有分类均支持修改和删除" /> | <img src="docs/images/recurring.png" width="240" alt="每月记账日期网格" /> |
+
+### 日期选择演示
+
+<img src="docs/images/recurring-selection.gif" width="300" alt="在每月 1–31 日网格中点选记账日期" />
+
+直接点击日期即可设置每月几号记账。GIF 由实际操作截图按步骤播放，只演示表单选择，没有创建或删除账单、定期任务。界面目前为简体中文，英文 README 提供英文使用与部署说明。
+
+截图和 GIF 存放在 `docs/images/`，不进入小程序安装包。
 
 ## 1.0.0 主要功能
 
@@ -40,7 +58,7 @@ pnpm dev:mp-weixin
 
 等待编译完成后，在微信开发者工具导入**项目根目录**。`project.config.json` 中 `miniprogramRoot` 指向 `dist/dev/mp-weixin/`；开发期间保持编译终端运行。
 
-项目已配置自己的 AppID。其他开发者使用此工程时，请同步修改 `src/manifest.json` 的 `mp-weixin.appid` 和根目录 `project.config.json` 的 `appid`。不填写 AppSecret，顶层的 DCloud appid 是另一个字段。
+AppID 和云环境从未跟踪的 `.env.local` 生成。请填写自己的部署标识；共享设置修改 `src/manifest.template.json` 和 `project.config.template.json`，不要编辑生成文件或填写 AppSecret。
 
 Windows 也可使用快捷脚本；它优先使用 PATH 中的 pnpm，再尝试本机 Codex 自带的 pnpm，不改系统环境变量：
 
@@ -88,7 +106,7 @@ pnpm build:h5
 
 ## 定时触发器部署
 
-`cloudfunctions/ledger/config.json` 包含名为 `ledgerRecurring` 的 timer 配置，cron 为 `0 */5 * * * * *`。上传云函数代码之后，还需在微信开发者工具右键 ledger → **上传触发器**。在云开发控制台确认触发器存在且有执行日志，才能保证小程序关闭时自动生成账单。入口严格校验微信注入的 SOURCE 为 wx_trigger，普通客户端无法伪造定时器事件执行全局任务；不要将该函数配置为匿名 HTTP 接口。
+`cloudfunctions/ledger/config.json` 包含名为 `ledgerRecurring` 的 timer 配置，cron 为 `0 */5 * * * * *`。上传云函数代码之后，还需在微信开发者工具右键 **`cloudfunctions/ledger/config.json` → 上传触发器**（部分版本在 ledger 文件夹菜单中）。在云开发控制台确认触发器存在且有执行日志，才能保证小程序关闭时自动生成账单。入口严格校验微信注入的 SOURCE 为 wx_trigger，普通客户端无法伪造定时器事件执行全局任务；不要将该函数配置为匿名 HTTP 接口。
 
 任务每次最多处理 20 个到期项目，事务成功后推进 nextDate，积压任务在后续触发继续处理。并发任务和客户端手动补记使用相同的周期标记，写入与预算相关计数保持原子性。大量项目时应监控执行时间、失败日志和积压，并相应扩大处理能力。
 
