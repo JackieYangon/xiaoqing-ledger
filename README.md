@@ -1,5 +1,12 @@
 # 小青账本
 
+[![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-237859?style=flat-square)](#100-主要功能)
+[![License MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Platform WeChat Mini Program](https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&logo=wechat&logoColor=white)](https://developers.weixin.qq.com/miniprogram/dev/framework/)
+[![Framework uni-app](https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square)](https://uniapp.dcloud.net.cn/)
+[![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
 基于 uni-app + Vue 3 + TypeScript 的微信记账小程序。当前版本 **1.0.0**。
 
 ## 1.0.0 主要功能
