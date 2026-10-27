@@ -1,7 +1,7 @@
 const https = require('node:https')
 const cloud = require('wx-server-sdk')
-const { beginDesktop, pollDesktop, desktopOwner } = require('./ledger/desktop-auth')
-const { createHandler, APP_ID } = require('./ledger/handler')
+const { beginDesktop, pollDesktop, desktopOwner } = require('./desktop-auth')
+const { createHandler, APP_ID } = require('./handler')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const allowed = new Set([
   'session',

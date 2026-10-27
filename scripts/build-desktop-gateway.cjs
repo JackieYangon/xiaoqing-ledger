@@ -2,7 +2,7 @@ const fs = require('node:fs'),
   path = require('node:path')
 require('./prepare-local-config.cjs')
 require('./build-cloud.cjs')
-const target = 'cloudfunctions/desktop-gateway/ledger'
+const target = 'cloudfunctions/desktop-gateway'
 fs.mkdirSync(target, { recursive: true })
 for (const file of [
   'handler.js',

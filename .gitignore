@@ -18,5 +18,10 @@ Thumbs.db
 /cloudfunctions/ledger/local-config.json
 # Generated copies of ledger code for the separately deployed HTTP function.
 /cloudfunctions/desktop-gateway/ledger/
+/cloudfunctions/desktop-gateway/handler.js
+/cloudfunctions/desktop-gateway/features.js
+/cloudfunctions/desktop-gateway/core.cjs
+/cloudfunctions/desktop-gateway/desktop-auth.js
+/cloudfunctions/desktop-gateway/local-config.json
 /desktop/config.local.json
 /release/
