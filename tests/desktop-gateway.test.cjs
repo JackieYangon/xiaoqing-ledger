@@ -39,6 +39,65 @@ vm.runInNewContext(fs.readFileSync('cloudfunctions/desktop-gateway/index.js', 'u
   )
   const poll = await post({ action: 'desktopPoll', scene: '0'.repeat(24), token: 'c'.repeat(64) })
   assert.equal(JSON.parse(poll.body).ok, false)
+  // Provider diagnostics expose only a stage and numeric code, never its raw message or secret.
+  const { EventEmitter } = require('node:events')
+  const sentQrBodies = []
+  async function diagnosticCase(bodies, miniEnv = 'release') {
+    const result = {}
+    const diagnosticDb = mockDB()
+    const diagnostic = {
+      ...sandbox,
+      exports: result,
+      console: { error() {} },
+      process: { env: { XQ_WECHAT_APP_SECRET: 'synthetic-do-not-expose', XQ_MINI_ENV: miniEnv } },
+    }
+    diagnostic.require = (name) => {
+      if (name === 'node:https')
+        return {
+          request(url, options, callback) {
+            const req = new EventEmitter()
+            req.write = (body) => {
+              if (String(url).includes('getwxacodeunlimit')) sentQrBodies.push(JSON.parse(body))
+            }
+            req.end = () => {
+              const res = new EventEmitter()
+              res.statusCode = 200
+              callback(res)
+              res.emit('data', Buffer.from(JSON.stringify(bodies.shift())))
+              res.emit('end')
+            }
+            return req
+          },
+        }
+      if (name === 'wx-server-sdk')
+        return { init() {}, DYNAMIC_CURRENT_ENV: 'test', database: () => diagnosticDb }
+      return sandbox.require(name)
+    }
+    vm.runInNewContext(
+      fs.readFileSync('cloudfunctions/desktop-gateway/index.js', 'utf8'),
+      diagnostic,
+    )
+    return result.main({
+      httpMethod: 'POST',
+      body: JSON.stringify({ action: 'desktopBegin', tokenHash: 'd'.repeat(64) }),
+    })
+  }
+  const tokenError = await diagnosticCase([{ errcode: 40125, errmsg: 'synthetic-do-not-expose' }])
+  assert.equal(tokenError.statusCode, 503)
+  assert.equal(JSON.parse(tokenError.body).stage, 'access_token')
+  assert.equal(JSON.parse(tokenError.body).providerCode, 40125)
+  assert.equal(tokenError.body.includes('synthetic-do-not-expose'), false)
+  const pageError = await diagnosticCase([
+    { access_token: 'test-token' },
+    { errcode: 41030, errmsg: 'synthetic-do-not-expose' },
+  ])
+  assert.equal(JSON.parse(pageError.body).stage, 'qr_code')
+  assert.equal(JSON.parse(pageError.body).providerCode, 41030)
+  assert.equal(pageError.body.includes('synthetic-do-not-expose'), false)
+  assert.equal(sentQrBodies.at(-1).check_path, true)
+  await diagnosticCase([{ access_token: 'test-token' }, { errcode: 41030 }], 'trial')
+  assert.equal(sentQrBodies.at(-1).check_path, false)
+  assert.equal(sentQrBodies.at(-1).env_version, 'trial')
   console.log(
     'PASS desktop gateway: flat deployment modules, unsupported methods, forged identities and invalid tickets',
   )

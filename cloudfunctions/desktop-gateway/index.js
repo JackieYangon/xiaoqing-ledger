@@ -38,15 +38,21 @@ function request(url, options = {}, body) {
     req.end()
   })
 }
+function wechatFailure(stage, providerCode) {
+  const error = new Error('微信登录服务尚未就绪')
+  error.wechatStage = stage
+  error.providerCode = Number.isSafeInteger(providerCode) ? providerCode : null
+  return error
+}
 async function makeQr(scene) {
   const secret = process.env.XQ_WECHAT_APP_SECRET
-  if (!APP_ID || !secret) throw new Error('电脑登录网关尚未配置微信服务端密钥')
+  if (!APP_ID || !secret) throw wechatFailure('configuration', null)
   const u = new URL('https://api.weixin.qq.com/cgi-bin/token')
   u.searchParams.set('grant_type', 'client_credential')
   u.searchParams.set('appid', APP_ID)
   u.searchParams.set('secret', secret)
   const token = JSON.parse((await request(u)).toString('utf8'))
-  if (!token.access_token) throw new Error('小程序登录码服务不可用，请检查服务端配置')
+  if (!token.access_token) throw wechatFailure('access_token', token.errcode)
   const endpoint = new URL('https://api.weixin.qq.com/wxa/getwxacodeunlimit')
   endpoint.searchParams.set('access_token', token.access_token)
   const env = ['release', 'trial', 'develop'].includes(process.env.XQ_MINI_ENV)
@@ -55,7 +61,7 @@ async function makeQr(scene) {
   const body = JSON.stringify({
     scene,
     page: 'pages/desktop-login/index',
-    check_path: true,
+    check_path: env === 'release',
     env_version: env,
     width: 430,
   })
@@ -67,7 +73,10 @@ async function makeQr(scene) {
     },
     body,
   )
-  if (image[0] === 0x7b) throw new Error('小程序登录码生成失败，请检查小程序版本和页面发布状态')
+  if (image[0] === 0x7b) {
+    const result = JSON.parse(image.toString('utf8'))
+    throw wechatFailure('qr_code', result.errcode)
+  }
   return image
 }
 function response(status, value) {
@@ -113,7 +122,19 @@ exports.main = async (event) => {
     return response(200, result)
   } catch (e) {
     // Never log request bodies, tokens, access tokens or WeChat API URLs.
-    console.error('desktop gateway request failed', e.code || 'ERROR')
+    console.error(
+      'desktop gateway request failed',
+      e.wechatStage || e.code || 'ERROR',
+      e.providerCode || '',
+    )
+    if (e.wechatStage)
+      return response(503, {
+        ok: false,
+        code: 'WECHAT_SETUP',
+        stage: e.wechatStage,
+        providerCode: e.providerCode,
+        message: '微信登录服务配置尚未完成，请联系管理员',
+      })
     return response(500, {
       ok: false,
       code: 'SERVICE',
