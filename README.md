@@ -1,31 +1,49 @@
-# 小青账本
+<p align="center"><img src="src/static/avatar.png" width="88" height="88" alt="小青账本标志" /></p>
+<h1 align="center">小青账本</h1>
+<p align="center"><b>把日子，记清楚。</b><br />基于 uni-app、Vue 3 和 TypeScript 的微信记账小程序。</p>
+<p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
+<p align="center">
+  <a href="#100-主要功能"><img src="https://img.shields.io/badge/version-1.0.0-237859?style=flat-square" alt="Version 1.0.0" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
+  <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
+  <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
+  <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white" alt="Vue 3" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
+</p>
+<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#100-主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
+<p align="center">版本 1.0.0 · 个人 / 群组账本 · 云端同步 · 定期记账</p>
 
-**简体中文** | [English](README.en.md)
+<a name="screenshots"></a>
+<h2 align="center">界面预览</h2>
+<p align="center">从微信登录到分类管理，再到每月自动记账。</p>
+<table align="center" width="100%">
+  <tr>
+    <td width="33%" align="center" valign="top"><h3>微信登录</h3><img src="docs/images/login.png" width="220" alt="微信登录" /><p>微信身份登录，云端同步账本。</p></td>
+    <td width="33%" align="center" valign="top"><h3>分类管理</h3><img src="docs/images/categories.png" width="220" alt="分类管理" /><p>所有分类统一管理，支持修改与删除。</p></td>
+    <td width="33%" align="center" valign="top"><h3>定期记账</h3><img src="docs/images/recurring.png" width="220" alt="定期记账" /><p>日历式网格点选每月记账日期。</p></td>
+  </tr>
+</table>
 
-[![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-237859?style=flat-square)](#100-主要功能)
-[![License MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Platform WeChat Mini Program](https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&logo=wechat&logoColor=white)](https://developers.weixin.qq.com/miniprogram/dev/framework/)
-[![Framework uni-app](https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square)](https://uniapp.dcloud.net.cn/)
-[![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+<a name="demo"></a>
+<h2 align="center">点选一天，每月自动记录。</h2>
+<table align="center" width="100%">
+  <tr>
+    <td width="36%" align="center" valign="middle"><img src="docs/images/recurring-selection.gif" width="260" alt="点选每月记账日期" /><br /><sub>每月日期选择演示</sub></td>
+    <td width="64%" valign="top">
+<h3>三步设置定期记账</h3>
+<ol><li><b>选择周期</b><br />支持每月或每周，适用于房租、订阅等固定支出。</li><li><b>点选日期</b><br />在 1–31 日网格中直接选择；短月份自动按月底执行。</li><li><b>填写金额与分类</b><br />创建项目并部署触发器后，云端每 5 分钟检查到期任务。</li></ol>
+<h3>同一周期，只记一笔</h3>
+<ul><li>手动记账关联定期项目，避免自动重复记录。</li><li>支持暂停和删除任务，保留历史账单。</li><li>定期记账仅生成账单，不发起真实扣款。</li></ul>
+<p><b>日常记账也齐全</b><br />个人与群组账本切换、群组共享预算、收支趋势统计，以及 JSON / CSV 数据导出。</p>
+<p><a href="#启动">部署自己的小青账本 →</a></p>
+    </td>
+  </tr>
+</table>
+<p align="center"><sub>实际小程序界面截图；GIF 按步骤播放日期选择过程，没有创建或删除账单。</sub></p>
 
-基于 uni-app + Vue 3 + TypeScript 的微信记账小程序。当前版本 **1.0.0**。
+界面目前为简体中文，英文 README 提供英文使用与部署说明。素材未包含真实头像、昵称、账单明细、邀请码或部署标识；`docs/images/` 不进入小程序安装包。
 
-## 界面预览
-
-以下素材来自实际运行的小程序，未包含真实头像、昵称、账单明细、邀请码或部署标识。
-
-| 微信登录 | 分类管理 | 每月定期记账 |
-| :---: | :---: | :---: |
-| <img src="docs/images/login.png" width="240" alt="微信登录页" /> | <img src="docs/images/categories.png" width="240" alt="所有分类均支持修改和删除" /> | <img src="docs/images/recurring.png" width="240" alt="每月记账日期网格" /> |
-
-### 日期选择演示
-
-<img src="docs/images/recurring-selection.gif" width="300" alt="在每月 1–31 日网格中点选记账日期" />
-
-直接点击日期即可设置每月几号记账。GIF 由实际操作截图按步骤播放，只演示表单选择，没有创建或删除账单、定期任务。界面目前为简体中文，英文 README 提供英文使用与部署说明。
-
-截图和 GIF 存放在 `docs/images/`，不进入小程序安装包。
+---
 
 ## 1.0.0 主要功能
 

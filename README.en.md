@@ -1,31 +1,49 @@
-# Xiaoqing Ledger
+<p align="center"><img src="src/static/avatar.png" width="88" height="88" alt="Xiaoqing Ledger logo" /></p>
+<h1 align="center">Xiaoqing Ledger</h1>
+<p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
+<p align="center"><a href="README.md">简体中文</a> · <b>English</b></p>
+<p align="center">
+  <a href="#features"><img src="https://img.shields.io/badge/version-1.0.0-237859?style=flat-square" alt="Version 1.0.0" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
+  <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
+  <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
+  <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white" alt="Vue 3" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
+</p>
+<p align="center"><a href="#screenshots">Screenshots</a> · <a href="#demo">Live demo GIF</a> · <a href="#features">Features</a> · <a href="#getting-started">Getting started</a> · <a href="#deploying-cloud-development">Cloud deployment</a></p>
+<p align="center">Version 1.0.0 · Personal & group books · Cloud sync · Recurring records</p>
 
-[简体中文](README.md) | **English**
+<a name="screenshots"></a>
+<h2 align="center">A look inside</h2>
+<p align="center">Sign in, organize categories, and set a recurring schedule.</p>
+<table align="center" width="100%">
+  <tr>
+    <td width="33%" align="center" valign="top"><h3>WeChat sign-in</h3><img src="docs/images/login.png" width="220" alt="WeChat sign-in" /><p>Sign in to access your synced ledger.</p></td>
+    <td width="33%" align="center" valign="top"><h3>Category management</h3><img src="docs/images/categories.png" width="220" alt="Category management" /><p>Rename or delete any category.</p></td>
+    <td width="33%" align="center" valign="top"><h3>Recurring schedules</h3><img src="docs/images/recurring.png" width="220" alt="Recurring schedules" /><p>Choose a monthly date in one tap.</p></td>
+  </tr>
+</table>
 
-[![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-237859?style=flat-square)](#features)
-[![License MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![WeChat Mini Program](https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&logo=wechat&logoColor=white)](https://developers.weixin.qq.com/miniprogram/dev/framework/)
-[![uni-app](https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square)](https://uniapp.dcloud.net.cn/)
-[![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+<a name="demo"></a>
+<h2 align="center">Choose a day. Repeat every month.</h2>
+<table align="center" width="100%">
+  <tr>
+    <td width="36%" align="center" valign="middle"><img src="docs/images/recurring-selection.gif" width="260" alt="Selecting monthly recurring dates" /><br /><sub>Monthly day selection</sub></td>
+    <td width="64%" valign="top">
+<h3>Set a schedule in three steps</h3>
+<ol><li><b>Choose a cycle</b><br />Monthly or weekly, for recurring expenses such as rent or subscriptions.</li><li><b>Select the date</b><br />Tap 1–31 in the monthly grid. Dates beyond the month length use its last day.</li><li><b>Enter the amount and category</b><br />Create the rule; the cloud scheduler checks due rules every five minutes after its trigger is deployed.</li></ol>
+<h3>Keep one entry per period</h3>
+<ul><li>Link a manual expense to the rule to prevent duplicate automatic records.</li><li>Pause a rule, or delete it while keeping historical entries.</li><li>Schedules create ledger records, not actual payments.</li></ul>
+<p><b>More than recurring entries</b><br />Switch between personal and group books, share group budgets, review trends, and export JSON or CSV backups.</p>
+<p><a href="#getting-started">Set up your own instance →</a></p>
+    </td>
+  </tr>
+</table>
+<p align="center"><sub>Actual mini program screenshots; the GIF plays captured selection steps with pauses. No records were created or deleted.</sub></p>
 
-A WeChat bookkeeping mini program built with **uni-app, Vue 3 and TypeScript**. Current release: **1.0.0**. Keep personal and shared group ledgers, track budgets, and sync records through WeChat Cloud Development.
+The interface is currently in Simplified Chinese; this README provides English setup and usage instructions. Media excludes personal profiles, transaction details, invitation codes and deployment identifiers. Files in `docs/images/` are not included in the mini program package.
 
-The app interface is currently in Simplified Chinese. This document provides English setup and usage instructions; it does not imply an English app interface.
-
-## Screenshots
-
-Screenshots show the actual mini program interface. They exclude personal profiles, transaction details, invitation codes and deployment identifiers.
-
-| WeChat sign-in | Category management | Monthly recurring schedule |
-| :---: | :---: | :---: |
-| <img src="docs/images/login.png" width="240" alt="WeChat sign-in screen" /> | <img src="docs/images/categories.png" width="240" alt="Categories with rename and delete actions" /> | <img src="docs/images/recurring.png" width="240" alt="Monthly day-selection grid" /> |
-
-### Recurring date selection
-
-<img src="docs/images/recurring-selection.gif" width="300" alt="Selecting different days in the monthly recurring schedule" />
-
-Captured from the running mini program: select a day directly in the 1–31 grid. This demonstration changes only the form selection; it does not create or delete any records or scheduled tasks. The GIF uses discrete screenshots with pauses for readability.
+---
 
 ## Features
 
