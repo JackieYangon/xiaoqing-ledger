@@ -211,6 +211,6 @@ pnpm package:desktop
 
 Electron 45 开发与打包需要 Node.js 22.12 或更高版本。桌面窗口的请求只连接 `.env.local` 中 `XQ_DESKTOP_API_URL` 指定的 HTTPS 网关；打包前配置该地址，再重新执行 `pnpm package:desktop`。生成的 `release/` 和本地配置均不提交到 Git。安装包为未签名测试版。
 
-部署前需：①在相同云环境部署更新后的 `ledger` 和独立的 `desktop-gateway`；②只为 `desktop-gateway` 创建 HTTPS 网关，禁止将原 `ledger` 云函数暴露为匿名 HTTP；③仅在云函数服务端环境变量配置 `XQ_WECHAT_APP_SECRET`，不要填写到 `.env.local`、仓库、安装包或聊天消息中；④按小程序代码版本设置 `XQ_MINI_ENV` 为 `release`、`trial` 或 `develop`，并确保对应版本已包含 `pages/desktop-login/index`；⑤在网关层配置请求频率与配额限制，保护未登录的二维码生成接口免于滥用。服务端需能访问微信接口，且满足微信接口的 IP 白名单等平台配置。
+部署前需：①在相同云环境部署更新后的 `ledger` 和独立的 `desktop-gateway`；②只为 `desktop-gateway` 创建 HTTPS 网关，禁止将原 `ledger` 云函数暴露为匿名 HTTP；③仅在云函数服务端环境变量配置 `XQ_WECHAT_APP_SECRET`，不要填写到 `.env.local`、仓库、安装包或聊天消息中；④按小程序代码版本设置 `XQ_MINI_ENV` 为 `release`、`trial` 或 `develop`，并确保对应版本已包含 `pages/desktop-login/index`；⑤在网关层配置按来源限流和配额，保护未登录接口免于滥用。云函数另对二维码生成设全局限额（每分钟 30 次、每天 500 次，按 UTC 时间窗口），但全局限额无法代替网关防护，且可能因恶意请求造成其他用户暂时无法获取登录码。服务端需能访问微信接口，且满足微信接口的 IP 白名单等平台配置。
 
 将网关 URL 作为 `XQ_DESKTOP_API_URL` 配置在本机 `.env.local` 后构建安装包。AppSecret 只属于服务端，不要发送给他人。完整验收应使用两台真实设备与两个微信账号，验证登录确认、取消/过期/重放、账号和群组隔离、写入去重、网络中断恢复、退出及小程序已有账本兼容。模拟测试不等于真实云端验收。

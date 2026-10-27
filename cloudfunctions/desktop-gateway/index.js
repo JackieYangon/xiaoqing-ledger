@@ -89,8 +89,10 @@ exports.main = async (event) => {
       return response(400, { ok: false, message: '请求数据无效' })
     const input = JSON.parse(event.body)
     const db = cloud.database({ throwOnNotFound: false })
-    if (input.action === 'desktopBegin')
-      return response(200, await beginDesktop(db, input.tokenHash, makeQr))
+    if (input.action === 'desktopBegin') {
+      const result = await beginDesktop(db, input.tokenHash, makeQr)
+      return response(result.code === 'RATE_LIMIT' ? 429 : 200, result)
+    }
     if (input.action === 'desktopPoll')
       return response(200, await pollDesktop(db, input.scene, input.token))
     if (!allowed.has(input.action))

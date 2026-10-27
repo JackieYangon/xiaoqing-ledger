@@ -6,6 +6,7 @@ const { mockDB } = require('./mock-db.cjs'),
     confirmDesktop,
     pollDesktop,
     desktopOwner,
+    reserveQrQuota,
     hash,
   } = require('../cloudfunctions/ledger/desktop-auth'),
   { createHandler, APP_ID } = require('../cloudfunctions/ledger/handler')
@@ -89,6 +90,28 @@ const { mockDB } = require('./mock-db.cjs'),
   await assert.rejects(() =>
     beginDesktop(db, hash('d'.repeat(64)), async () => Buffer.from('not-an-image!')),
   )
+  const quotaDB = mockDB()
+  const epoch = 1700000000000
+  const quota = await Promise.all(Array.from({ length: 35 }, () => reserveQrQuota(quotaDB, epoch)))
+  assert.equal(quota.filter(Boolean).length, 30)
+  assert.equal(await reserveQrQuota(quotaDB, epoch + 60000), true)
+  let called = 0
+  const rejectDB = mockDB()
+  for (let i = 0; i < 30; i++) assert.equal(await reserveQrQuota(rejectDB, epoch), true)
+  const limited = await beginDesktop(
+    rejectDB,
+    hash('e'.repeat(64)),
+    async () => {
+      called++
+      return qr()
+    },
+    epoch,
+  )
+  assert.equal(limited.code, 'RATE_LIMIT')
+  assert.equal(called, 0)
+  const failDB = mockDB()
+  failDB.setFail(true)
+  await assert.rejects(() => beginDesktop(failDB, hash('f'.repeat(64)), qr, epoch))
   console.log(
     'PASS desktop pairing: proof, expiry, replay/race, denial, identity isolation, logout',
   )

@@ -5,6 +5,8 @@ const SCENE = /^[a-f0-9]{24}$/
 const TOKEN = /^[a-f0-9]{64}$/
 const PAIR_TTL = 2 * 60 * 1000
 const SESSION_TTL = 24 * 60 * 60 * 1000
+const QR_MINUTE_LIMIT = 30
+const QR_DAY_LIMIT = 500
 const clean = (d) => {
   if (!d) return undefined
   const { _id, ...value } = d
@@ -26,8 +28,41 @@ async function read(ref) {
 function code(scene) {
   return (parseInt(scene.slice(0, 8), 16) % 1000000).toString().padStart(6, '0')
 }
+// Transactional global quota bounds QR generation and upstream WeChat calls.
+// Gateway-level per-IP throttling is still required for public exposure.
+async function reserveQrQuota(db, now = Date.now()) {
+  const result = await db.runTransaction(async (tx) => {
+    const ref = tx.collection('xq_requests').doc('desktop_qr_quota')
+    const old = await read(ref)
+    const minute = Math.floor(now / 60000),
+      day = Math.floor(now / 86400000)
+    const minuteCount = old?.minute === minute ? old.minuteCount : 0
+    const dayCount = old?.day === day ? old.dayCount : 0
+    if (
+      !Number.isSafeInteger(minuteCount) ||
+      !Number.isSafeInteger(dayCount) ||
+      minuteCount < 0 ||
+      dayCount < 0
+    )
+      throw Error('登录限额状态无效')
+    if (minuteCount >= QR_MINUTE_LIMIT || dayCount >= QR_DAY_LIMIT) return false
+    await ref.set({
+      data: {
+        type: 'desktop_qr_quota',
+        minute,
+        minuteCount: minuteCount + 1,
+        day,
+        dayCount: dayCount + 1,
+      },
+    })
+    return true
+  })
+  return result.result ?? result
+}
 async function beginDesktop(db, tokenHash, makeQr, now = Date.now()) {
   if (!TOKEN.test(tokenHash || '')) throw Error('无效的登录请求')
+  if (!(await reserveQrQuota(db, now)))
+    return { ok: false, code: 'RATE_LIMIT', message: '登录码请求过于频繁，请稍后再试' }
   const scene = crypto.randomBytes(12).toString('hex')
   // Generate QR before allocating the database ticket; backend API failures create no usable login.
   const image = await makeQr(scene)
@@ -93,4 +128,12 @@ async function desktopOwner(db, token, now = Date.now()) {
     ? s.owner
     : null
 }
-module.exports = { beginDesktop, confirmDesktop, pollDesktop, desktopOwner, code, hash }
+module.exports = {
+  beginDesktop,
+  confirmDesktop,
+  pollDesktop,
+  desktopOwner,
+  reserveQrQuota,
+  code,
+  hash,
+}
