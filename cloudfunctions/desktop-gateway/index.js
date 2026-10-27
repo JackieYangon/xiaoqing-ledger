@@ -2,6 +2,12 @@ const https = require('node:https')
 const cloud = require('wx-server-sdk')
 const { beginDesktop, pollDesktop, desktopOwner } = require('./desktop-auth')
 const { createHandler, APP_ID } = require('./handler')
+let localConfig = {}
+try {
+  localConfig = require('./local-config.json')
+} catch (e) {
+  if (e.code !== 'MODULE_NOT_FOUND') throw e
+}
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const allowed = new Set([
   'session',
@@ -55,9 +61,8 @@ async function makeQr(scene) {
   if (!token.access_token) throw wechatFailure('access_token', token.errcode)
   const endpoint = new URL('https://api.weixin.qq.com/wxa/getwxacodeunlimit')
   endpoint.searchParams.set('access_token', token.access_token)
-  const env = ['release', 'trial', 'develop'].includes(process.env.XQ_MINI_ENV)
-    ? process.env.XQ_MINI_ENV
-    : 'release'
+  const configuredEnv = process.env.XQ_MINI_ENV || localConfig.miniEnv || 'release'
+  const env = ['release', 'trial', 'develop'].includes(configuredEnv) ? configuredEnv : 'release'
   const body = JSON.stringify({
     scene,
     page: 'pages/desktop-login/index',

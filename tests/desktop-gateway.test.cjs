@@ -25,6 +25,7 @@ const sandbox = {
       return { init() {}, DYNAMIC_CURRENT_ENV: 'test', database: () => db }
     if (name === './desktop-auth') return require('../cloudfunctions/ledger/desktop-auth')
     if (name === './handler') return require('../cloudfunctions/ledger/handler')
+    if (name === './local-config.json') return { miniEnv: 'release' }
     throw new Error('unexpected dependency ' + name)
   },
 }
@@ -42,7 +43,7 @@ vm.runInNewContext(fs.readFileSync('cloudfunctions/desktop-gateway/index.js', 'u
   // Provider diagnostics expose only a stage and numeric code, never its raw message or secret.
   const { EventEmitter } = require('node:events')
   const sentQrBodies = []
-  async function diagnosticCase(bodies, miniEnv = 'release') {
+  async function diagnosticCase(bodies, miniEnv = 'release', localEnv = 'release') {
     const result = {}
     const diagnosticDb = mockDB()
     const diagnostic = {
@@ -52,6 +53,7 @@ vm.runInNewContext(fs.readFileSync('cloudfunctions/desktop-gateway/index.js', 'u
       process: { env: { XQ_WECHAT_APP_SECRET: 'synthetic-do-not-expose', XQ_MINI_ENV: miniEnv } },
     }
     diagnostic.require = (name) => {
+      if (name === './local-config.json') return { miniEnv: localEnv }
       if (name === 'node:https')
         return {
           request(url, options, callback) {
@@ -98,6 +100,11 @@ vm.runInNewContext(fs.readFileSync('cloudfunctions/desktop-gateway/index.js', 'u
   await diagnosticCase([{ access_token: 'test-token' }, { errcode: 41030 }], 'trial')
   assert.equal(sentQrBodies.at(-1).check_path, false)
   assert.equal(sentQrBodies.at(-1).env_version, 'trial')
+  await diagnosticCase([{ access_token: 'test-token' }, { errcode: 41030 }], '', 'trial')
+  assert.equal(sentQrBodies.at(-1).env_version, 'trial')
+  await diagnosticCase([{ access_token: 'test-token' }, { errcode: 41030 }], 'release', 'trial')
+  assert.equal(sentQrBodies.at(-1).env_version, 'release')
+  assert.equal(sentQrBodies.at(-1).check_path, true)
   console.log(
     'PASS desktop gateway: flat deployment modules, unsupported methods, forged identities and invalid tickets',
   )
