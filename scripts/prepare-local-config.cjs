@@ -1,4 +1,11 @@
 const fs = require('node:fs')
+const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+const parts = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.exec(version)
+if (!parts) throw new Error('package.json version must be a semantic version')
+const [major, minor, patch] = parts.slice(1).map(Number)
+const versionCode = major * 10000 + minor * 100 + patch
+if (minor > 99 || patch > 99 || !Number.isSafeInteger(versionCode) || versionCode > 2100000000)
+  throw new Error('package.json version cannot be represented as a numeric versionCode')
 const values = {}
 if (fs.existsSync('.env.local')) {
   for (const line of fs.readFileSync('.env.local', 'utf8').split(/\r?\n/)) {
@@ -15,6 +22,8 @@ function write(file, content) {
     fs.writeFileSync(file, content)
 }
 const manifest = JSON.parse(fs.readFileSync('src/manifest.template.json', 'utf8'))
+manifest.versionName = version
+manifest.versionCode = String(versionCode)
 manifest['mp-weixin'].appid = appid
 write('src/manifest.json', JSON.stringify(manifest, null, 2) + '\n')
 const project = JSON.parse(fs.readFileSync('project.config.template.json', 'utf8'))

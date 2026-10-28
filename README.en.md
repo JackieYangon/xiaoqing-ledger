@@ -3,7 +3,7 @@
 <p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
 <p align="center"><a href="README.md">简体中文</a> · <b>English</b></p>
 <p align="center">
-  <a href="#features"><img src="https://img.shields.io/badge/version-1.0.2-237859?style=flat-square" alt="Version 1.0.2" /></a>
+  <a href="#features"><img src="https://img.shields.io/badge/version-1.0.3-237859?style=flat-square" alt="Version 1.0.3" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
@@ -11,7 +11,7 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
 <p align="center"><a href="#screenshots">Screenshots</a> · <a href="#demo">Live demo GIF</a> · <a href="#features">Features</a> · <a href="#getting-started">Getting started</a> · <a href="#deploying-cloud-development">Cloud deployment</a></p>
-<p align="center">Version 1.0.2 · Cross-platform filtering · Budget reuse · Period comparisons</p>
+<p align="center">Version 1.0.3 · Cross-platform filtering · Budget reuse · Period comparisons</p>
 
 <a name="screenshots"></a>
 <h2 align="center">A look inside</h2>
@@ -45,7 +45,7 @@ The interface is currently in Simplified Chinese; this README provides English s
 
 ---
 
-Download the Windows preview from the [v1.0.2 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.2). Desktop v1.0.2 remains a pre-release, uses the trial mini program and requires WeChat trial access. See the [release notes](docs/releases/v1.0.2.md).
+Download the Windows preview from the [v1.0.3 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.3). Desktop v1.0.3 remains a pre-release, uses the trial mini program and requires WeChat trial access. See the [release notes](docs/releases/v1.0.3.md).
 
 ## Features
 
@@ -86,6 +86,8 @@ Do not enter an AppSecret in the frontend. `.env.local` and generated deployment
 
 Edit shared settings in `project.config.template.json` and `src/manifest.template.json`. Development and build commands generate local configuration automatically. After changing manifest settings, restart the development build.
 
+The application version comes from `package.json` (`version`). The profile page, generated manifest and desktop installer use this value. Rebuild and upload after changing it; existing development output and the phone's trial package do not update merely because the version file changed.
+
 Windows shortcuts are also available:
 
 ```powershell
@@ -105,6 +107,20 @@ pnpm build:h5
 ```
 
 Production output is written to `dist/build/mp-weixin` and `dist/build/h5`. Do not edit generated files. The mini program build automatically checks that the main package is below 1,500,000 bytes, component injection is enabled with `requiredComponents`, and each image/audio asset is at most 200,000 bytes. WeChat Developer Tools remains the final authority for its upload checks.
+
+### Uploading the trial mini program
+
+Sign in to WeChat Developer Tools and provide the actual CLI path on your machine:
+
+```powershell
+pnpm upload:mp-weixin --cli "C:\YOUR_PATH\cli.bat"
+# Rebuild and prepare the upload project without uploading
+pnpm upload:mp-weixin --prepare-only
+```
+
+Every upload runs a fresh production build and package checks, then creates a new project under `work/wechat-release/` and copies `dist/build/mp-weixin` into its `miniprogram/` directory. It takes the upload version from `package.json` and requires both a CLI success result and a fresh receipt. It does not upload the repository root's potentially stale development output. The CLI path can also be set with the `XQ_WECHAT_CLI` environment variable.
+
+After uploading, confirm the version in the mini program console and select that development version as the trial version. Reopen the trial mini program on your phone and check the version on the profile page. GitHub Releases and WeChat trial versions are separate publication channels. Generated upload projects and receipts in `work/` are not committed to Git.
 
 Documentation images live in `docs/images/`, outside `src/static/`, and are not included in the mini program package.
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { APP_VERSION } from '@/config/version'
 import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
 import { useProtectedPage, logout, currentUser } from '@/services/auth'
@@ -128,7 +129,7 @@ async function chooseBook(e: any) {
       </view>
       <view class="card">
         <view class="section heading">关于小青</view>
-        <view class="muted">当前版本 1.0.2 · 收支筛选与预算规划</view>
+        <view class="muted">当前版本 {{ APP_VERSION }} · 收支筛选与预算规划</view>
         <view class="divider" />
         <view class="muted small">
           快速记账、预算计划、收支日历与趋势统计。微信端通过云函数保存账本，请使用当前微信账号登录后操作。

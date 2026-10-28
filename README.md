@@ -3,15 +3,15 @@
 <p align="center"><b>把日子，记清楚。</b><br />基于 uni-app、Vue 3 和 TypeScript 的微信记账小程序。</p>
 <p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
 <p align="center">
-  <a href="#102-主要功能"><img src="https://img.shields.io/badge/version-1.0.2-237859?style=flat-square" alt="Version 1.0.2" /></a>
+  <a href="#103-主要功能"><img src="https://img.shields.io/badge/version-1.0.3-237859?style=flat-square" alt="Version 1.0.3" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white" alt="Vue 3" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
-<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#102-主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
-<p align="center">版本 1.0.2 · 跨端明细筛选 · 预算复用 · 同进度收支统计</p>
+<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#103-主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
+<p align="center">版本 1.0.3 · 跨端明细筛选 · 预算复用 · 同进度收支统计</p>
 
 <a name="screenshots"></a>
 <h2 align="center">界面预览</h2>
@@ -45,9 +45,9 @@
 
 ---
 
-电脑端下载见 [v1.0.2 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.2)。v1.0.2 电脑端仍为体验测试版，需要微信体验权限；发布说明见 [v1.0.2](docs/releases/v1.0.2.md)。
+电脑端下载见 [v1.0.3 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.3)。v1.0.3 电脑端仍为体验测试版，需要微信体验权限；发布说明见 [v1.0.3](docs/releases/v1.0.3.md)。
 
-## 1.0.2 主要功能
+## 1.0.3 主要功能
 
 - **跨端筛选、预算与统计**：小程序和电脑端共用日期及金额范围筛选、预算复用和同进度统计逻辑；电脑端补齐收支日历、分类预算、月度/年度统计及复制账单。预算复制仅填入草稿，后台同步发现其他设备更新时阻止旧草稿覆盖。
 - **微信资料**：「我的」点击头像/昵称进入资料页，选择头像并使用微信昵称填写框，确认后保存。账号唯一性仍由微信身份决定，昵称不能用来切换或冒用账号。资料保存后，新账单记录当时的记账人资料。
@@ -81,6 +81,8 @@ pnpm dev:mp-weixin
 
 AppID 和云环境从未跟踪的 `.env.local` 生成。请填写自己的部署标识；共享设置修改 `src/manifest.template.json` 和 `project.config.template.json`，不要编辑生成文件或填写 AppSecret。
 
+应用版本统一来自 `package.json` 的 `version`：「我的」显示、生成的 manifest 和桌面安装包均使用该值。更新版本后需重新构建并上传小程序，已有开发目录和手机体验包不会因修改版本文件而自动更新。
+
 Windows 也可使用快捷脚本；它优先使用 PATH 中的 pnpm，再尝试本机 Codex 自带的 pnpm，不改系统环境变量：
 
 ```powershell
@@ -100,6 +102,20 @@ pnpm build:h5
 ```
 
 生产产物在 `dist/build/mp-weixin`，可单独导入开发者工具；H5 产物在 `dist/build/h5`。不要直接修改 dist 文件。
+
+### 上传小程序体验版
+
+使用已登录的微信开发者工具，填写本机 CLI 的实际路径：
+
+```powershell
+pnpm upload:mp-weixin --cli "C:\YOUR_PATH\cli.bat"
+# 仅重新构建并准备上传项目，不执行上传
+pnpm upload:mp-weixin --prepare-only
+```
+
+上传命令每次重新生产构建、检查包体质量，并在 `work/wechat-release/` 下创建独立项目，将 `dist/build/mp-weixin` 复制到项目内的 `miniprogram/`。上传版本取自 `package.json`，成功状态需同时通过 CLI 结果与本次新回执校验；不会直接上传根项目指向的旧开发产物。也可通过环境变量 `XQ_WECHAT_CLI` 设置 CLI 路径。
+
+上传后在小程序管理后台确认版本号，并将对应开发版本设为体验版；重新打开手机体验版，在「我的」核对当前版本。GitHub Release 与微信体验版是两个发布入口，需分别更新。`work/` 中的上传项目和回执不提交到 Git。
 
 ### 快速复查包体质量
 
