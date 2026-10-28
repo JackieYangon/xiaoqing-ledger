@@ -3,15 +3,15 @@
 <p align="center"><b>把日子，记清楚。</b><br />基于 uni-app、Vue 3 和 TypeScript 的微信记账小程序。</p>
 <p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
 <p align="center">
-  <a href="#101-主要功能"><img src="https://img.shields.io/badge/version-1.0.1-237859?style=flat-square" alt="Version 1.0.1" /></a>
+  <a href="#102-主要功能"><img src="https://img.shields.io/badge/version-1.0.2-237859?style=flat-square" alt="Version 1.0.2" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white" alt="Vue 3" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
-<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#101-主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
-<p align="center">版本 1.0.1 · 个人 / 群组账本 · 云端同步 · 定期记账</p>
+<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#102-主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
+<p align="center">版本 1.0.2 · 跨端明细筛选 · 预算复用 · 同进度收支统计</p>
 
 <a name="screenshots"></a>
 <h2 align="center">界面预览</h2>
@@ -45,10 +45,11 @@
 
 ---
 
-电脑端下载见 [GitHub Releases](https://github.com/JackieYangon/xiaoqing-ledger/releases)。v1.0.1 电脑端为体验测试版，需要微信体验权限；发布说明见 [v1.0.1](docs/releases/v1.0.1.md)。
+电脑端下载见 [v1.0.2 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.2)。v1.0.2 电脑端仍为体验测试版，需要微信体验权限；发布说明见 [v1.0.2](docs/releases/v1.0.2.md)。
 
-## 1.0.1 主要功能
+## 1.0.2 主要功能
 
+- **跨端筛选、预算与统计**：小程序和电脑端共用日期及金额范围筛选、预算复用和同进度统计逻辑；电脑端补齐收支日历、分类预算、月度/年度统计及复制账单。预算复制仅填入草稿，后台同步发现其他设备更新时阻止旧草稿覆盖。
 - **微信资料**：「我的」点击头像/昵称进入资料页，选择头像并使用微信昵称填写框，确认后保存。账号唯一性仍由微信身份决定，昵称不能用来切换或冒用账号。资料保存后，新账单记录当时的记账人资料。
 - **账本切换**：「我的 → 切换账本」选择个人或已加入群组。首页、账单、统计和预算都随账本切换，记账页显示当前账本。个人记录不会自动共享；旧本地迁移仅允许迁入个人账本。
 - **群组**：「我的 → 群组与账本」创建或加入。群主生成有效期 7 天的邀请，可用微信分享卡片或 16 位邀请码加入；重新生成会使旧邀请失效。成员能看群组账单和记账人，只能修改/删除自己的记录；群主管理共享预算、分类及批量导入。成员退出后失去访问权，历史记录保留。群主暂不能退出；没有账单、定期项目和其他成员时可删除空群组。每个群组最多 20 名成员，每个账号最多加入 20 个群组。
