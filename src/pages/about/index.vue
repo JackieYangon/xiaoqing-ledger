@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
 import { APP_VERSION } from '@/config/version'
 import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
-import { useProtectedPage, logout, currentUser } from '@/services/auth'
-const { authenticated, currentUserLabel } = useProtectedPage()
+import { browseReady, authenticated, currentUserLabel, logout, currentUser, ensureSession } from '@/services/auth'
+import GuestNotice from '@/components/GuestNotice.vue'
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
@@ -26,9 +27,8 @@ const bookIndex = computed(() =>
   Math.max(0, groups.value.findIndex((g) => g.id === currentBookId.value) + 1),
 )
 onShow(async () => {
-  if (!authenticated.value) return
   try {
-    await refreshWorkspace()
+    if (await ensureSession()) await refreshWorkspace()
     await refresh()
   } catch (e) {
     toastError(e)
@@ -45,21 +45,24 @@ async function chooseBook(e: any) {
 }
 </script>
 <template>
-  <template v-if="authenticated">
+  <SessionNotice />
+  <template v-if="browseReady">
     <view class="page">
-      <view class="brand" @tap="navigate('profile')">
+      <GuestNotice />
+      <view class="brand" @tap="authenticated && navigate('profile')">
         <image class="logo" :src="currentUser?.avatar || '/static/avatar.png'" mode="aspectFill" />
         <view>
           <view class="title">{{ currentUserLabel }}</view>
-          <view class="subtitle">编辑微信头像与昵称 ›</view>
+          <view class="subtitle">{{ authenticated ? '选填头像与昵称 ›' : '先体验，再选择登录' }}</view>
         </view>
       </view>
       <view class="card">
         <view class="row">
           <text class="section heading">{{ currentBookName }}</text>
-          <text class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
+          <text v-if="authenticated" class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
+          <text v-else class="badge">{{ storageLabel }}</text>
         </view>
-        <picker :range="bookNames" :value="bookIndex" @change="chooseBook">
+        <picker v-if="authenticated" :range="bookNames" :value="bookIndex" @change="chooseBook">
           <view class="secondary" style="padding: 20rpx; border-radius: 16rpx; margin: 12rpx 0">
             切换账本：{{ currentBookName }} ▾
           </view>
@@ -76,9 +79,11 @@ async function chooseBook(e: any) {
         </view>
         <view class="muted small">
           {{
-            cloudEnabled
-              ? '云端账本绑定当前微信身份，保存成功后换手机可读取。旧版本地记录请到云同步页面确认迁移。'
-              : '网页为独立本地预览。云端账本请在微信小程序中使用。'
+            !authenticated
+              ? '示例账本可用于体验记账与预算。登录后会打开你的正式账本，体验记录不会自动导入。'
+              : cloudEnabled
+                ? '云端账本绑定当前账号，保存成功后换手机可读取。旧版本地记录请到云同步页面确认迁移。'
+                : '网页为独立本地预览。云端账本请在小青账本小程序中使用。'
           }}
         </view>
       </view>
@@ -86,21 +91,21 @@ async function chooseBook(e: any) {
       <view class="card menu">
         <view class="menu-row" @tap="navigate('groups')">
           <view>
-            <view>群组与账本</view>
+            <view>群组与账本{{ authenticated ? '' : '（需登录）' }}</view>
             <view class="muted small">邀请成员 · 共享预算 · 切换账本</view>
           </view>
           <text>›</text>
         </view>
         <view class="menu-row" @tap="navigate('recurring')">
           <view>
-            <view>定期记账</view>
+            <view>定期记账{{ authenticated ? '' : '（需登录）' }}</view>
             <view class="muted small">每周 / 每月 · 关联项目防重复</view>
           </view>
           <text>›</text>
         </view>
         <view class="menu-row" @tap="navigate('sync')">
           <view>
-            <view>云同步与迁移</view>
+            <view>云同步与迁移{{ authenticated ? '' : '（需登录）' }}</view>
             <view class="muted small">同步状态 · 旧版账单迁移</view>
           </view>
           <text>›</text>
@@ -121,7 +126,7 @@ async function chooseBook(e: any) {
         </view>
         <view class="menu-row" @tap="navigate('backup')">
           <view>
-            <view>数据与备份</view>
+            <view>数据与备份{{ authenticated ? '' : '（需登录）' }}</view>
             <view class="muted small">JSON 恢复 · CSV 导出</view>
           </view>
           <text>›</text>
@@ -132,10 +137,10 @@ async function chooseBook(e: any) {
         <view class="muted">当前版本 {{ APP_VERSION }} · 收支筛选与预算规划</view>
         <view class="divider" />
         <view class="muted small">
-          快速记账、预算计划、收支日历与趋势统计。微信端通过云函数保存账本，请使用当前微信账号登录后操作。
+          快速记账、预算计划、收支日历与趋势统计。可先浏览并体验，登录后使用个人云端账本与群组服务。
         </view>
       </view>
-      <button class="secondary" style="margin-top: 32rpx" @tap="logout">退出登录</button>
+      <button v-if="authenticated" class="secondary" style="margin-top: 32rpx" @tap="logout">退出登录</button>
       <view class="footer">小小的一笔，也是生活的印记。</view>
     </view>
   </template>

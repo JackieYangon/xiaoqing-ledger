@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
 import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
-import { useProtectedPage } from '@/services/auth'
-const { authenticated } = useProtectedPage()
+import { browseReady } from '@/services/auth'
+import GuestNotice from '@/components/GuestNotice.vue'
 import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
@@ -74,8 +75,10 @@ watch(currentBookId, () => { selectedBar.value = -1 })
 onShow(refresh)
 </script>
 <template>
-  <template v-if="authenticated">
+  <SessionNotice />
+  <template v-if="browseReady">
   <view class="page">
+    <GuestNotice />
     <view class="eyebrow">A LITTLE MORE CLARITY</view>
     <view class="row">
       <view class="title compact-title">生活，心中有数</view>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
 import { useProtectedPage } from '@/services/auth'
 const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed, watch } from 'vue'
@@ -83,6 +84,7 @@ function restore() {
 }
 </script>
 <template>
+  <SessionNotice />
   <template v-if="authenticated">
     <view class="page">
       <view class="title compact-title">让记录有备份</view>

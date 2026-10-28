@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useProtectedPage } from '@/services/auth'
-const { authenticated } = useProtectedPage()
+import SessionNotice from '@/components/SessionNotice.vue'
+import { browseReady } from '@/services/auth'
+import GuestNotice from '@/components/GuestNotice.vue'
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { categoryOptions, type Kind } from '@/core/ledger'
@@ -52,7 +53,9 @@ function edit(value: string) {
 }
 </script>
 <template>
-  <view v-if="authenticated" class="page">
+  <SessionNotice />
+  <view v-if="browseReady" class="page">
+    <GuestNotice />
     <view class="title">分类管理</view>
     <view class="subtitle">所有分类均可重命名或删除，不区分默认与自定义。</view>
     <view v-if="!canManageBook" class="muted book">群组分类由群主管理。</view>

@@ -101,10 +101,14 @@ function setupPage(filename, env, props = {}, globals = {}) {
     if (request === '@dcloudio/uni-app') return {
       onLoad: (hook) => hooks.load.push(hook), onShow: (hook) => hooks.show.push(hook),
     }
-    if (request === '@/services/auth') return { useProtectedPage: () => ({ authenticated: vue.ref(true) }) }
+    if (request === '@/services/auth') return {
+      useProtectedPage: () => ({ authenticated: vue.ref(true) }),
+      browseReady: vue.ref(true), authenticated: vue.ref(true), guestMode: vue.ref(false),
+      ensureSession: async () => true,
+    }
     if (request === '@/services/navigation') return { useNavigationIcons() {} }
     if (request === '@/services/ledger') return env.service
-    if (request === '@/components/BillList.vue') return {}
+    if (['@/components/BillList.vue', '@/components/GuestNotice.vue', '@/components/SessionNotice.vue'].includes(request)) return {}
     if (request === '@/core/ledger' || request.endsWith('/core/ledger.ts')) return core
     if (request === '@/core/insights' || request.endsWith('/core/insights.ts')) return loadCore('insights')
     throw new Error(`Unexpected import in ${filename}: ${request}`)

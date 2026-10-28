@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useProtectedPage } from '@/services/auth'
+import SessionNotice from '@/components/SessionNotice.vue'
+import { useProtectedPage, ensureSession } from '@/services/auth'
 const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
@@ -43,7 +44,7 @@ function readLocal() {
   }
 }
 onShow(async () => {
-  if (!authenticated.value) return
+  if (!(await ensureSession())) return
   readLocal()
   await refresh()
 })
@@ -112,6 +113,7 @@ function discard() {
 }
 </script>
 <template>
+  <SessionNotice />
   <template v-if="authenticated">
     <view class="page">
       <view class="title compact-title">记录，随你而行</view>

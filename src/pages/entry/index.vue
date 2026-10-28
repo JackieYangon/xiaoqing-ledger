@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useProtectedPage } from '@/services/auth'
-const { authenticated, currentUserLabel } = useProtectedPage()
+import SessionNotice from '@/components/SessionNotice.vue'
+import { browseReady, currentUserLabel } from '@/services/auth'
+import GuestNotice from '@/components/GuestNotice.vue'
 import { ref, computed, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { categoryOptions, today, money, calculateMoney, type Kind } from '@/core/ledger'
@@ -51,6 +52,7 @@ const options = computed(() => {
     : active
 })
 watch(options, (items) => {
+  if (!browseReady.value) return
   if (!items.includes(category.value)) category.value = items[0] || ''
 })
 const suggestions = computed(() =>
@@ -69,14 +71,23 @@ const calculated = computed(() => {
     return '—'
   }
 })
-onShow(refresh)
-onLoad(async (args) => {
+let entryArgs: Record<string, any> = {}
+onShow(() => {
+  if (invalid.value && !busy.value) loadEntry(entryArgs)
+  else refresh()
+})
+onLoad((args) => {
+  entryArgs = args || {}
+  loadEntry(entryArgs)
+})
+async function loadEntry(args: Record<string, any>) {
   busy.value = true
   if (!(await refresh())) {
     busy.value = false
     invalid.value = true
     return
   }
+  invalid.value = false
   if (args?.ruleId) {
     const idx = availableRules.value.findIndex((r) => r.id === String(args.ruleId))
     if (idx >= 0) selectRule({ detail: { value: idx + 1 } })
@@ -101,7 +112,7 @@ onLoad(async (args) => {
     }
   }
   busy.value = false
-})
+}
 function changeKind(value: Kind) {
   kind.value = value
   category.value = categoryOptions(state.value, value)[0] || ''
@@ -188,11 +199,13 @@ function remove() {
 }
 </script>
 <template>
-  <template v-if="authenticated">
+  <SessionNotice />
+  <template v-if="browseReady">
     <view class="muted small" style="padding: 24rpx 32rpx 0">
       {{ currentBookName }} · 记账人：{{ currentUserLabel }}
     </view>
     <view class="page entry-page">
+      <GuestNotice />
       <view v-if="invalid" class="error">账单未能加载，请返回同步后重新打开。</view>
       <view class="row">
         <view class="title compact">{{ id ? '编辑这一笔' : '记下生活的一笔' }}</view>

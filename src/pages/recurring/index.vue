@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
+import { ensureSession } from '@/services/auth'
 import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useProtectedPage, currentUser } from '@/services/auth'
@@ -27,6 +29,7 @@ const categories = computed(() => categoryOptions(state.value, 'expense'))
 watch(
   categories,
   (items) => {
+    if (!authenticated.value) return
     if (!items.includes(category.value)) category.value = items[0] || ''
   },
   { immediate: true },
@@ -48,7 +51,7 @@ async function removeRule() {
   }
 }
 onShow(async () => {
-  if (!authenticated.value) return
+  if (!(await ensureSession())) return
   try {
     await refreshWorkspace()
     await refresh()
@@ -110,6 +113,7 @@ function record(rule: any) {
 }
 </script>
 <template>
+  <SessionNotice />
   <view v-if="authenticated" class="page">
     <view class="title">定期记账</view>
     <view class="badge">{{ currentBookName }}</view>

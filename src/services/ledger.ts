@@ -1,7 +1,10 @@
 import {
   assertLoggedIn,
-  requireLogin,
+  hasSession,
+  ensureSession,
+  guestMode,
   onSessionReset,
+  onSessionReady,
   authenticatedCall,
   currentUser,
   updateProfile,
@@ -19,7 +22,9 @@ import {
 import { createCloudClient } from '@/core/cloud-client'
 import { cloudEnabled } from './cloud-transport'
 import { CLOUD_ENV } from '@/config/cloud'
+import { createGuestRepository } from './guest-ledger'
 export { cloudEnabled }
+const guestRepository = createGuestRepository()
 const KEY = 'xiaoqing.ledger.v1'
 export const localRepository = createRepository({
   read: () => {
@@ -33,7 +38,7 @@ export const localRepository = createRepository({
 })
 export const schedulerStatus = ref<{ lastRun: string; healthy: boolean } | null>(null)
 export const currentBookId = ref('')
-export const currentBookName = ref('个人账本')
+export const currentBookName = ref(guestMode.value ? '示例账本' : '个人账本')
 export const groups = ref<Array<{ id: string; name: string; creator: string; size: number }>>([])
 export const rules = ref<any[]>([])
 export const isGroup = computed(() => !!currentBookId.value)
@@ -55,7 +60,7 @@ const makeClient = () =>
     currentBookId.value,
   )
 let client = makeClient()
-export const state = ref(emptyState()),
+export const state = ref(guestMode.value ? guestRepository.read() : emptyState()),
   entries = computed(() => state.value.entries),
   loadError = ref('')
 export const syncStatus = ref<'local' | 'connecting' | 'synced' | 'saving' | 'error'>(
@@ -67,7 +72,7 @@ export const syncBusy = ref(false),
   pendingOperation = ref(false),
   canDiscardPending = ref(false)
 export const storageLabel = computed(
-  () =>
+  () => guestMode.value ? '游客体验 · 仅本次有效' :
     ({
       local: '网页本地预览',
       connecting: '连接云端中',
@@ -76,7 +81,9 @@ export const storageLabel = computed(
       error: '同步待处理',
     })[syncStatus.value],
 )
-export const saveMessage = computed(() => (cloudEnabled ? '已保存到云端' : '已保存到本机'))
+export const saveMessage = computed(() =>
+  guestMode.value ? '已保存到体验账本' : cloudEnabled ? '已保存到云端' : '已保存到本机',
+)
 export const recordFilter = ref<{
   month: string
   kind: Kind
@@ -87,20 +94,26 @@ export const recordFilter = ref<{
 let refreshTask: Promise<boolean> | null = null
 onSessionReset(() => {
   currentBookId.value = ''
-  currentBookName.value = '个人账本'
+  currentBookName.value = '示例账本'
   groups.value = []
   rules.value = []
   client = makeClient()
-  state.value = emptyState()
+  state.value = guestRepository.read()
   accountId.value = ''
   lastSync.value = ''
   loadError.value = ''
   pendingOperation.value = false
   canDiscardPending.value = false
   syncBusy.value = false
-  syncStatus.value = 'connecting'
+  syncStatus.value = 'local'
   recordFilter.value = null
   refreshTask = null
+})
+onSessionReady(() => {
+  // Never show the experience as a newly signed-in account's real balance.
+  state.value = emptyState()
+  if (!currentBookId.value) currentBookName.value = '个人账本'
+  syncStatus.value = cloudEnabled ? 'connecting' : 'local'
 })
 onForegroundCheck(async (ready) => {
   if (!ready) {
@@ -145,13 +158,20 @@ function report(e: unknown) {
   capturePending()
 }
 export function refresh(): Promise<boolean> {
-  if (!requireLogin()) return Promise.resolve(false)
+  if (!hasSession()) {
+    if (!guestMode.value) return ensureSession().then((ready) => ready ? refresh() : false)
+    state.value = guestRepository.read()
+    currentBookName.value = '示例账本'
+    loadError.value = ''
+    return Promise.resolve(true)
+  }
   const activeClient = client
   if (refreshTask) return refreshTask
   if (syncBusy.value) return Promise.resolve(false)
   refreshTask = (async () => {
     await Promise.resolve()
     try {
+      if (client !== activeClient || !hasSession()) return false
       if (cloudEnabled) {
         syncStatus.value = 'connecting'
         await fetchCloud()
@@ -169,12 +189,26 @@ export function refresh(): Promise<boolean> {
   })()
   return refreshTask
 }
+const guestOperations = new Set([
+  'save', 'remove', 'setBudget', 'renameCategory', 'addCategory', 'removeCategory', 'setHidden',
+])
+function editableRepository() {
+  return guestMode.value ? guestRepository : localRepository
+}
 async function write(operation: string, args: any, local: () => any, validateCurrent?: () => void) {
-  assertLoggedIn()
+  if (guestMode.value && guestOperations.has(operation)) {
+    validateCurrent?.()
+    const result = local()
+    state.value = guestRepository.read()
+    return result
+  }
   const activeClient = client
-  if (refreshTask) await refreshTask
-  assertLoggedIn()
+  if (!(await ensureSession())) throw new Error('账本尚未连接，请联网后重试')
   if (client !== activeClient) throw new Error('登录状态已变化')
+  assertLoggedIn()
+  if (refreshTask) await refreshTask
+  if (client !== activeClient) throw new Error('登录状态已变化')
+  assertLoggedIn()
   if (syncBusy.value) throw new Error('正在处理上一项操作，请稍后再试')
   validateCurrent?.()
   if (!cloudEnabled) {
@@ -202,20 +236,20 @@ async function write(operation: string, args: any, local: () => any, validateCur
   }
 }
 export const repository = {
-  read: () => (cloudEnabled ? snapshotRepository().read() : localRepository.read()),
-  list: () => (cloudEnabled ? snapshotRepository().list() : localRepository.list()),
+  read: () => (guestMode.value ? guestRepository.read() : cloudEnabled ? snapshotRepository().read() : localRepository.read()),
+  list: () => (guestMode.value ? guestRepository.list() : cloudEnabled ? snapshotRepository().list() : localRepository.list()),
   save: (draft: Draft, id?: string, expectedVersion?: number, createId?: string, ruleId?: string) =>
     write(
       'save',
       { draft, ...(ruleId ? { ruleId } : {}), ...(id ? { id, expectedVersion } : { createId }) },
-      () => localRepository.save(draft, id, expectedVersion),
+      () => editableRepository().save(draft, id, expectedVersion),
     ),
   remove: (id: string, version: number) =>
-    write('remove', { id, version }, () => localRepository.remove(id, version)),
+    write('remove', { id, version }, () => editableRepository().remove(id, version)),
   setBudget: (month: string, budget: Budget, expectedBudget?: Budget | null) =>
-    write('setBudget', { month, budget }, () => localRepository.setBudget(month, budget), () => {
+    write('setBudget', { month, budget }, () => editableRepository().setBudget(month, budget), () => {
       if (expectedBudget === undefined) return
-      const current = (cloudEnabled ? state.value : localRepository.read()).budgets[month] || null
+      const current = (guestMode.value ? guestRepository.read() : cloudEnabled ? state.value : localRepository.read()).budgets[month] || null
       const same = current === null || expectedBudget === null
         ? current === expectedBudget
         : current.total === expectedBudget.total &&
@@ -225,14 +259,14 @@ export const repository = {
     }),
   renameCategory: (kind: Kind, name: string, newName: string) =>
     write('renameCategory', { kind, name, newName }, () =>
-      localRepository.renameCategory(kind, name, newName),
+      editableRepository().renameCategory(kind, name, newName),
     ),
   addCategory: (kind: Kind, name: string) =>
-    write('addCategory', { kind, name }, () => localRepository.addCategory(kind, name)),
+    write('addCategory', { kind, name }, () => editableRepository().addCategory(kind, name)),
   removeCategory: (kind: Kind, name: string) =>
-    write('removeCategory', { kind, name }, () => localRepository.removeCategory(kind, name)),
+    write('removeCategory', { kind, name }, () => editableRepository().removeCategory(kind, name)),
   setHidden: (value: boolean) =>
-    write('setHidden', { value }, () => localRepository.setHidden(value)),
+    write('setHidden', { value }, () => editableRepository().setHidden(value)),
   exportBackup: () =>
     cloudEnabled ? snapshotRepository().exportBackup() : localRepository.exportBackup(),
   previewImport: (text: string) =>
@@ -306,13 +340,14 @@ export function copyText(data: string) {
 }
 
 export async function workspaceAction(action: string, args: any = {}) {
-  assertLoggedIn()
   const result = await authenticatedCall({ action, args })
   if (!result?.ok) throw new Error(result?.message || '操作失败，请重试')
   return result
 }
 export async function refreshWorkspace() {
+  const activeClient = client
   const result = await workspaceAction('workspace')
+  if (client !== activeClient) throw new Error('登录状态已变化')
   groups.value = result.groups || []
   schedulerStatus.value = result.scheduler || null
   if (result.profile) updateProfile(result.profile)

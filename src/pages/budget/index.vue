@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useProtectedPage } from '@/services/auth'
-const { authenticated } = useProtectedPage()
+import SessionNotice from '@/components/SessionNotice.vue'
+import { browseReady } from '@/services/auth'
+import GuestNotice from '@/components/GuestNotice.vue'
 import { ref, computed, watch } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
   today,
   money,
@@ -78,6 +79,9 @@ async function load() {
 onLoad((args) => {
   if (args?.month && validMonth(String(args.month))) month.value = String(args.month)
   load()
+})
+onShow(() => {
+  if (!ready.value && !busy.value) load()
 })
 function changeMonth(e: any) {
   if (busy.value || syncBusy.value) return
@@ -157,8 +161,10 @@ function spent(name: string) {
 }
 </script>
 <template>
-  <template v-if="authenticated">
+  <SessionNotice />
+  <template v-if="browseReady">
     <view class="page">
+      <GuestNotice />
       <view class="row">
         <view class="title compact-title">给开销一点计划</view>
         <picker mode="date" fields="month" :value="month" :disabled="busy || syncBusy" @change="changeMonth">

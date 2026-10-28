@@ -1,12 +1,13 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { authenticated, authenticatedCall, currentUserLabel } from '@/services/auth'
+import { authenticated, authenticatedCall, currentUserLabel, ensureSession, guestMode } from '@/services/auth'
 const scene = ref(''),
   busy = ref(false),
   finished = ref('')
 const pairingCode = ref('')
-onLoad((args) => {
+onLoad(async (args) => {
   const value = typeof args?.scene === 'string' ? decodeURIComponent(args.scene) : ''
   if (!/^[a-f0-9]{24}$/.test(value)) {
     finished.value = '二维码无效，请在电脑重新获取'
@@ -14,7 +15,8 @@ onLoad((args) => {
   }
   scene.value = value
   pairingCode.value = String(parseInt(value.slice(0, 8), 16) % 1000000).padStart(6, '0')
-  if (!authenticated.value) uni.reLaunch({ url: '/pages/login/index?desktop=' + value })
+  if (!(await ensureSession()) && guestMode.value)
+    uni.reLaunch({ url: '/pages/login/index?desktop=' + value })
 })
 function goHome() {
   uni.switchTab({ url: '/pages/home/index' })
@@ -39,6 +41,7 @@ async function decide(decision: 'approve' | 'deny') {
 }
 </script>
 <template>
+  <SessionNotice />
   <view class="page">
     <view class="title">电脑登录确认</view>
     <view class="card">

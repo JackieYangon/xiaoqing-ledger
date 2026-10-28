@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
+import { ensureSession } from '@/services/auth'
 import { ref, computed } from 'vue'
 import { onLoad, onShow, onShareAppMessage } from '@dcloudio/uni-app'
 import { useProtectedPage, currentUser } from '@/services/auth'
@@ -26,7 +28,7 @@ onLoad((args) => {
   if (args?.invite) code.value = String(args.invite)
 })
 onShow(async () => {
-  if (!authenticated.value) return
+  if (!(await ensureSession())) return
   try {
     await refreshWorkspace()
   } catch (e) {
@@ -120,6 +122,7 @@ async function leave() {
 }
 </script>
 <template>
+  <SessionNotice />
   <view v-if="authenticated" class="page">
     <view class="title">一起记账</view>
     <view class="subtitle">个人账本保持私密，群组账单共同可见。</view>

@@ -15,10 +15,10 @@
 
 <a name="screenshots"></a>
 <h2 align="center">A look inside</h2>
-<p align="center">Sign in, organize categories, and set a recurring schedule.</p>
+<p align="center">Explore first and choose when to sign in. Preview the sign-in, category and recurring schedule pages below.</p>
 <table align="center" width="100%">
   <tr>
-    <td width="33%" align="center" valign="top"><h3>WeChat sign-in</h3><img src="docs/images/login.png" width="220" alt="WeChat sign-in" /><p>Sign in to access your synced ledger.</p></td>
+    <td width="33%" align="center" valign="top"><h3>Optional sign-in</h3><img src="docs/images/login.png" width="220" alt="Xiaoqing Ledger sign-in page" /><p>Explore first, then sign in to access your cloud ledger.</p></td>
     <td width="33%" align="center" valign="top"><h3>Category management</h3><img src="docs/images/categories.png" width="220" alt="Category management" /><p>Rename or delete any category.</p></td>
     <td width="33%" align="center" valign="top"><h3>Recurring schedules</h3><img src="docs/images/recurring.png" width="220" alt="Recurring schedules" /><p>Choose a monthly date in one tap.</p></td>
   </tr>
@@ -49,8 +49,9 @@ Download the Windows preview from the [v1.0.3 Release](https://github.com/Jackie
 
 ## Features
 
-- **WeChat sign-in and cloud sync:** all business pages require sign-in. Account ownership is derived on the server from trusted WeChat identity. Use the same WeChat account on another phone to retrieve synced records.
-- **Optional profile:** choose an avatar and enter a nickname explicitly. New records retain a snapshot of their author's profile. Names cannot be used to impersonate another account.
+- **Explore before signing in:** first launch without a saved login opens the home page with a sample ledger. Try recording entries, filtering bills, statistics, budgets and category management without signing in. Trial edits remain only in memory for the current app session and never become part of an account's ledger. After you choose to sign in, later launches verify and restore the same account automatically.
+- **Account sign-in and cloud sync:** choose to sign in when you want your personal cloud ledger, shared books, recurring records or backup tools. Ownership is verified on the server. Sign in to the same account on another phone to retrieve synced records.
+- **Optional profile:** no phone number is required. Avatars and nicknames are optional, saved only after your explicit choice and confirmation, and are not required for bookkeeping. New records retain a snapshot of their author's profile. Names cannot be used to impersonate another account.
 - **Personal and group ledgers:** switch books from the profile page. Personal records are not automatically shared. Group members see shared records and their authors, and can edit or delete their own entries. The creator manages shared budgets, categories and imports.
 - **Group invitations:** join through a WeChat share card or a 16-character invitation code. Invitations expire after seven days; generating a new invitation invalidates the previous one. Limits: 20 members per group and 20 groups per account. Members can leave; creators can delete an empty group with no rules or other members.
 - **Fast entry:** income and expense categories, arithmetic amounts such as `18.5+6-2`, a numeric keypad, note suggestions, and save-and-add-another. Existing records can be copied as new entries.
@@ -95,7 +96,7 @@ Windows shortcuts are also available:
 .\dev.ps1 -Target h5
 ```
 
-The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 is a sign-in preview only, not a usable browser ledger. A desktop EXE is available as a development build; QR sign-in requires a separately configured HTTPS gateway and real-device acceptance testing before production use.
+The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 supports guest browsing and sample-ledger edits for the current app session, but does not support account sign-in or access to cloud ledgers. A desktop EXE is available as a development build; QR sign-in requires a separately configured HTTPS gateway and real-device acceptance testing before production use.
 
 ## Checks and builds
 
@@ -146,8 +147,11 @@ Each invocation processes up to 20 due rules and advances their next date after 
 
 ## Identity, privacy and data safety
 
-- Trusted OPENID/APPID and a valid session are required for ledger operations. Client-supplied account fields cannot replace server-side identity.
-- Session credentials are kept in memory and last up to 24 hours. Cold starts and logout require signing in again. Foreground identity checks guard against account changes. Logout clears local in-memory data and revokes the current session without deleting cloud records or other devices' sessions.
+- First-time guests can open the home page and try entries, filters, statistics, budgets and categories without automatic sign-in or profile authorization. The sign-in page also offers a return to browsing. Automatic restoration applies only after a previous voluntary sign-in.
+- Trial data exists only in memory for the current app session. It does not read legacy local bills or account caches and is never imported into the personal ledger when signing in. No phone number is required; avatars and nicknames are optional.
+- Trusted OPENID/APPID and a valid session are required for cloud ledger operations. Client-supplied account fields cannot replace server-side identity.
+- A dedicated local login record stores only the session credential, account identifier and expiry, with no bills or profile details. Server sessions last up to 24 hours. Later launches and foreground checks verify the remembered identity and renew expired sessions only for the same account. Temporary network failures retain the login record, hide account data and offer a connection retry.
+- Signing out removes the local login record, clears in-memory account data and filters, and returns to guest browsing without deleting cloud records or other devices' sessions. Clearing the mini program cache also returns the next launch to guest mode. An identity change clears the previous account state and requires a new voluntary sign-in. Login-storage failures display an error without modifying existing bills.
 - The app processes account identifiers, voluntarily provided profile details, entries, budgets and group membership. Shared book entries and author details are visible to group members. Open-source licensing does not authorize access to users' data.
 - Avatar uploads accept PNG/JPEG, are compressed by the client and checked by the server, with a size limit of roughly 200 KB. Storage paths are assigned on the server, and temporary display URLs are returned. Old avatar files are retained for historical records. Automated profile/avatar content moderation is not currently included.
 - `xq_books` stores books, profiles, groups and recurring rules. `xq_entries` stores records. `xq_requests` stores sessions, idempotency receipts, invitations and period markers. Do not delete `cycle_` markers: doing so can allow a deleted periodic entry to be recreated.
@@ -157,7 +161,7 @@ Each invocation processes up to 20 due rules and advances their next date after 
 
 Legacy local data remains under `xiaoqing.ledger.v1`; schema 1/2 is supported. Export a copy first, then explicitly migrate it to the signed-in personal account from the sync page. Migration does not delete the original local data. Confirm successful sync before changing phones.
 
-Imports run in batches of up to 20 entries. Retrying skips existing IDs and preserves current budgets/settings; a failure may occur after earlier batches have succeeded. Cross-book imports attribute entries to the importing user and remove recurring-rule associations. Pending requests remain isolated by environment, account and book, and can be retried after reconnecting. Concurrent edits require refreshing and reconfirming instead of overwriting another device's changes. Offline entry creation is not supported.
+Imports run in batches of up to 20 entries. Retrying skips existing IDs and preserves current budgets/settings; a failure may occur after earlier batches have succeeded. Cross-book imports attribute entries to the importing user and remove recurring-rule associations. Pending requests remain isolated by environment, account and book, and can be retried after reconnecting. Concurrent edits require refreshing and reconfirming instead of overwriting another device's changes. Offline entry creation in account ledgers is not supported.
 
 Amounts are stored as integer cents. JSON exports include entries, categories and budgets, but not group membership, invitations, recurring rules or profile configuration. Limits: 50,000 entries and 2,000,000 characters per JSON backup. Backups are not encrypted. Cloud storage is not a substitute for independent backups; clearing local storage may discard unmigrated data and pending requests.
 

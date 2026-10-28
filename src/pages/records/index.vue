@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
 import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
-import { useProtectedPage } from '@/services/auth'
-const { authenticated } = useProtectedPage()
+import { browseReady } from '@/services/auth'
+import GuestNotice from '@/components/GuestNotice.vue'
 import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { today, money, summarize, groupDays, calendar, categoryOptions, monthDays, toCsv, type Kind } from '@/core/ledger'
@@ -140,8 +141,10 @@ watch(currentBookId, () => {
 })
 </script>
 <template>
-  <template v-if="authenticated">
+  <SessionNotice />
+  <template v-if="browseReady">
   <view class="page">
+    <GuestNotice />
     <view class="row">
       <view class="title compact-title">收支明细</view>
       <button class="text-btn" @tap="openEntry(undefined, day || undefined)">＋ 记一笔</button>

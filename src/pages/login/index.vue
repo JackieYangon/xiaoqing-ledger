@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
 import { onShow, onLoad } from '@dcloudio/uni-app'
-import { authenticated, authStatus, authError, login } from '@/services/auth'
+import { authenticated, authStatus, authError, login, ensureSession, browseReady } from '@/services/auth'
 import { cloudEnabled } from '@/services/cloud-transport'
 let invite = ''
 let desktop = ''
@@ -20,20 +21,24 @@ function destination() {
 async function signIn() {
   if (await login()) uni.reLaunch({ url: destination() })
 }
-onShow(() => {
-  if (authenticated.value) uni.reLaunch({ url: destination() })
+function browse() {
+  uni.reLaunch({ url: '/pages/home/index' })
+}
+onShow(async () => {
+  if (await ensureSession()) uni.reLaunch({ url: destination() })
 })
 </script>
 <template>
-  <view class="page login-page">
+  <SessionNotice />
+  <view v-if="browseReady || authStatus === 'signingIn'" class="page login-page">
     <image class="logo" src="/static/avatar.png" mode="aspectFill" />
     <view class="eyebrow">小青账本</view>
     <view class="title">登录，记录自己的生活</view>
-    <view class="subtitle">每一笔收支，都属于你。</view>
+    <view class="subtitle">可先浏览体验，再自行选择登录。</view>
     <view class="card">
-      <view class="section">你的微信，你的账本</view>
+      <view class="section">你的账号，你的账本</view>
       <view class="muted">
-        登录后可使用记账、统计、预算与备份。账本绑定当前微信账号，同一账号换手机也能继续查看。
+        无需登录即可体验记账、账单筛选、统计和预算。登录后可保存正式账本、同步与备份，同一账号换手机也能继续查看。体验记录不会导入正式账本。
       </view>
       <button
         class="primary login-button"
@@ -41,15 +46,18 @@ onShow(() => {
         :disabled="!cloudEnabled || authStatus === 'signingIn'"
         @tap="signIn"
       >
-        {{ cloudEnabled ? '微信登录' : '请在微信小程序中登录' }}
+        {{ cloudEnabled ? '登录我的账本' : '请在小青账本小程序中登录' }}
+      </button>
+      <button class="secondary browse-button" :disabled="authStatus === 'signingIn'" @tap="browse">
+        暂不登录，继续体验
       </button>
       <view v-if="authError" class="error">{{ authError }}</view>
       <view class="muted small notice">
-        使用当前微信身份登录，无需提供头像、昵称或手机号。不同微信账号的账本相互独立。
+        登录无需提供手机号，头像和昵称可在登录后自行选填。不同账号的账本相互独立。
       </view>
     </view>
     <view v-if="!cloudEnabled" class="muted notice">
-      网页暂不支持微信登录，请通过微信开发者工具预览或在微信中打开小青账本。
+      网页可浏览体验；登录并保存正式账本，请在小青账本小程序中操作。
     </view>
   </view>
 </template>
@@ -74,6 +82,9 @@ onShow(() => {
 }
 .login-button {
   margin-top: 36rpx;
+}
+.browse-button {
+  margin-top: 20rpx;
 }
 .notice {
   margin-top: 28rpx;

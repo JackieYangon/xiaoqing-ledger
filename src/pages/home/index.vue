@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
 import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
-import { useProtectedPage } from '@/services/auth'
-const { authenticated, currentUserLabel } = useProtectedPage()
+import { browseReady, authenticated } from '@/services/auth'
+import GuestNotice from '@/components/GuestNotice.vue'
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { today, money, summarize, inMonth, budgetProgress } from '@/core/ledger'
@@ -56,14 +57,18 @@ function all() {
 onShow(refresh)
 </script>
 <template>
-  <template v-if="authenticated">
+  <SessionNotice />
+  <template v-if="browseReady">
     <view class="page">
+      <GuestNotice />
       <view class="row">
         <text class="eyebrow">XIAOQING · DAILY LEDGER</text>
-        <text class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
+        <text v-if="authenticated" class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
+        <text v-else class="badge">{{ storageLabel }}</text>
       </view>
       <view class="title">把日子，记清楚。</view>
-      <view class="badge" @tap="navigate('groups')">{{ currentBookName }} · 切换账本 ›</view>
+      <view v-if="authenticated" class="badge" @tap="navigate('groups')">{{ currentBookName }} · 切换账本 ›</view>
+      <view v-else class="badge">{{ currentBookName }}</view>
       <view class="subtitle">已记录 {{ days }} 天，让每一笔都有意义。</view>
       <view v-if="loadError" class="error">{{ loadError }}</view>
       <view class="hero">
@@ -125,7 +130,7 @@ onShow(refresh)
       <view class="quick-links">
         <button @tap="navigate('budget')">预算计划</button>
         <button @tap="navigate('categories')">分类管理</button>
-        <button @tap="navigate('backup')">备份恢复</button>
+        <button @tap="navigate('backup')">{{ authenticated ? '备份恢复' : '备份（需登录）' }}</button>
       </view>
       <view class="row section">
         <text>最近账单</text>

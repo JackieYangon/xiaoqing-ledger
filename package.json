@@ -8,7 +8,7 @@
     "dev:h5": "node scripts/prepare-local-config.cjs && uni --host 127.0.0.1",
     "build:h5": "node scripts/prepare-local-config.cjs && uni build",
     "type-check": "node scripts/prepare-local-config.cjs && vue-tsc --noEmit",
-    "test": "node scripts/build-cloud.cjs && node tests/version.test.cjs && node tests/upload-mp-weixin.test.cjs && node tests/ledger.test.cjs && node tests/insights.test.cjs && node tests/ui-features.test.cjs && node tests/cloud.test.cjs && node tests/auth.test.cjs && node tests/features.test.cjs && node tests/desktop-auth.test.cjs && node tests/desktop-gateway.test.cjs",
+    "test": "node scripts/build-cloud.cjs && node tests/version.test.cjs && node tests/upload-mp-weixin.test.cjs && node tests/ledger.test.cjs && node tests/insights.test.cjs && node tests/ui-features.test.cjs && node tests/cloud.test.cjs && node tests/auth.test.cjs && node tests/auth-persistence.test.cjs && node tests/features.test.cjs && node tests/desktop-auth.test.cjs && node tests/desktop-gateway.test.cjs",
     "test:version": "node tests/version.test.cjs && node tests/upload-mp-weixin.test.cjs",
     "build:cloud": "node scripts/prepare-local-config.cjs && node scripts/build-cloud.cjs",
     "check:mp-quality": "node scripts/check-mp-quality.cjs",

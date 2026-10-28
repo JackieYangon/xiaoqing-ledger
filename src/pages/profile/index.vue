@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SessionNotice from '@/components/SessionNotice.vue'
+import { ensureSession } from '@/services/auth'
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useProtectedPage, currentUser, updateProfile } from '@/services/auth'
@@ -10,7 +12,7 @@ const name = ref(''),
   busy = ref(false),
   version = ref(0)
 onShow(async () => {
-  if (!authenticated.value) return
+  if (!(await ensureSession())) return
   try {
     await refreshWorkspace()
     name.value = currentUser.value?.name || ''
@@ -71,28 +73,29 @@ async function save() {
 }
 </script>
 <template>
+  <SessionNotice />
   <view v-if="authenticated" class="page">
     <view class="title">我的资料</view>
-    <view class="subtitle">选择头像，填写你的微信昵称。</view>
+    <view class="subtitle">头像和昵称均可选填，不影响记账功能。</view>
     <view class="card">
       <button class="avatar-button" open-type="chooseAvatar" @chooseavatar="chooseAvatar">
         <image :src="avatar || '/static/avatar.png'" mode="aspectFill" />
       </button>
-      <view class="muted small centered">点击选择微信头像或其他图片</view>
+      <view class="muted small centered">头像选填，点击选择图片</view>
       <view class="field">
-        <text class="label">昵称</text>
+        <text class="label">昵称（选填）</text>
         <input
           v-model="name"
           type="nickname"
           maxlength="24"
           class="input"
-          placeholder="点击填写微信昵称"
+          placeholder="填写你希望展示的昵称"
           @blur="nickname"
         />
       </view>
       <button class="primary" :disabled="busy" :loading="busy" @tap="save">保存资料</button>
       <view class="muted small notice">
-        头像和昵称由你确认后保存，用于个人展示和群组账单的记账人信息。
+        仅在你主动选择并确认后保存，用于个人展示和群组账单的记账人信息；也可以保留默认资料。
       </view>
     </view>
   </view>
