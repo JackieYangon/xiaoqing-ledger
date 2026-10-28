@@ -2,45 +2,35 @@
 import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
 import { useProtectedPage } from '@/services/auth'
-const { authenticated, currentUserLabel } = useProtectedPage()
-import { ref, computed } from 'vue'
+const { authenticated } = useProtectedPage()
+import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
   today,
   money,
   summarize,
-  inMonth,
   categoryTotals,
   monthDays,
-  shiftMonth,
   type Kind,
 } from '@/core/ledger'
-import { entries, loadError, refresh, recordFilter } from '@/services/ledger'
+import { periodReport } from '@/core/insights'
+import { entries, loadError, refresh, recordFilter, currentBookId, openEntry } from '@/services/ledger'
 const month = ref(today().slice(0, 7)),
   kind = ref<Kind>('expense'),
-  period = ref('month'),
+  period = ref<'month' | 'year'>('month'),
   selectedBar = ref(-1)
-const periodEntries = computed(() =>
-  entries.value.filter((e) =>
-    period.value === 'month'
-      ? e.date.startsWith(month.value + '-')
-      : e.date.startsWith(month.value.slice(0, 4) + '-'),
-  ),
-)
-const total = computed(() => summarize(periodEntries.value)),
+const report = computed(() => periodReport(entries.value, month.value, period.value))
+const periodEntries = computed(() => report.value.currentEntries)
+const total = computed(() => report.value.current),
   groups = computed(() => categoryTotals(periodEntries.value, kind.value))
-const previous = computed(() => {
-  const prefix =
-    period.value === 'month'
-      ? shiftMonth(month.value, -1)
-      : String(Number(month.value.slice(0, 4)) - 1)
-  return summarize(entries.value.filter((e) => e.date.startsWith(prefix + '-')))[kind.value]
+const previous = computed(() => report.value.previous[kind.value])
+const comparison = computed(() => {
+  if (!report.value.elapsedDays) return '该周期尚未开始'
+  if (!previous.value) return total.value[kind.value] ? '上期金额为 0，暂无增幅' : '两期均无该类收支'
+  const change = total.value[kind.value] - previous.value
+  if (!change) return '与上期持平'
+  return `${change > 0 ? '增加' : '减少'} ${Math.abs((change / previous.value) * 100).toFixed(1)}%`
 })
-const comparison = computed(() =>
-  previous.value
-    ? `${total.value[kind.value] >= previous.value ? '增加' : '减少'} ${Math.abs(((total.value[kind.value] - previous.value) / previous.value) * 100).toFixed(1)}%`
-    : '上期无记录，暂无对比',
-)
 const trend = computed(() =>
   Array.from({ length: period.value === 'month' ? monthDays(month.value) : 12 }, (_, i) => {
     const prefix =
@@ -61,8 +51,7 @@ const biggest = computed(() =>
     .sort((a, b) => b.cents - a.cents)
     .slice(0, 5),
 )
-const daysRecorded = computed(() => new Set(periodEntries.value.map((e) => e.date)).size)
-function changePeriod(value: string) {
+function changePeriod(value: 'month' | 'year') {
   period.value = value
   selectedBar.value = -1
 }
@@ -71,13 +60,17 @@ function changeMonth(e: any) {
   selectedBar.value = -1
 }
 function drill(name: string) {
-  if (period.value === 'year') {
-    uni.showToast({ title: '切换到月度可查看分类明细', icon: 'none' })
-    return
+  if (!report.value.elapsedDays) return
+  recordFilter.value = {
+    month: month.value,
+    kind: kind.value,
+    category: name,
+    startDate: report.value.startDate,
+    endDate: report.value.endDate,
   }
-  recordFilter.value = { month: month.value, kind: kind.value, category: name }
   uni.switchTab({ url: '/pages/records/index' })
 }
+watch(currentBookId, () => { selectedBar.value = -1 })
 onShow(refresh)
 </script>
 <template>
@@ -109,27 +102,48 @@ onShow(refresh)
     <view v-if="loadError" class="error">{{ loadError }}</view>
     <view class="card">
       <view class="muted">
-        {{ period === 'month' ? '本月' : '本年' }}{{ kind === 'expense' ? '支出' : '收入' }}
+        所选{{ period === 'month' ? '月份' : '年度' }}{{ kind === 'expense' ? '支出' : '收入' }}
       </view>
       <view class="balance">¥ {{ money(total[kind]) }}</view>
       <view class="muted small">
-        较{{ period === 'month' ? '上个完整月份' : '上个完整年度' }}：{{ comparison }}
+        {{ period === 'month' ? '较上月' : '较上年' }}：{{ comparison }}
+      </view>
+      <view v-if="report.elapsedDays" class="comparison-range muted small">
+        <view>本期 {{ report.startDate }} 至 {{ report.endDate }}</view>
+        <view>对比 {{ report.previousStartDate }} 至 {{ report.previousEndDate }}</view>
+        <view>当前周期按相同日期进度对比，已结束周期按完整周期对比。</view>
       </view>
       <view class="divider" />
       <view class="metrics">
         <view>
           <text class="muted small">结余</text>
-          <view class="metric-number">{{ money(total.income - total.expense) }}</view>
+          <view class="metric-number">{{ money(report.balance) }}</view>
         </view>
         <view>
           <text class="muted small">记账天数</text>
-          <view class="metric-number">{{ daysRecorded }} 天</view>
+          <view class="metric-number">{{ report.recordedDays }} 天</view>
         </view>
         <view>
           <text class="muted small">账单笔数</text>
           <view class="metric-number">{{ periodEntries.length }} 笔</view>
         </view>
       </view>
+      <view class="divider" />
+      <view class="metrics insight-metrics">
+        <view>
+          <text class="muted small">结余率</text>
+          <view class="metric-number">{{ report.savingsRate === null ? '—' : report.savingsRate.toFixed(1) + '%' }}</view>
+        </view>
+        <view>
+          <text class="muted small">日均支出</text>
+          <view class="metric-number">{{ report.elapsedDays ? money(report.dailyExpense) : '—' }}</view>
+        </view>
+        <view>
+          <text class="muted small">无支出记录</text>
+          <view class="metric-number">{{ report.noExpenseDays }} 天</view>
+        </view>
+      </view>
+      <view class="muted small insight-note">结余率为结余占收入比例，无收入时不计算。日均和无支出记录天数仅统计截至今日已过日期；未记账不代表没有消费。</view>
     </view>
     <view class="section">{{ kind === 'expense' ? '消费' : '收入' }}趋势</view>
     <view class="card trend-card">
@@ -177,7 +191,7 @@ onShow(refresh)
             {{ item.name }}
             <text class="muted small">{{ item.percent }}%</text>
           </text>
-          <text class="small">¥ {{ money(item.cents) }} {{ period === 'month' ? '›' : '' }}</text>
+          <text class="small">¥ {{ money(item.cents) }} ›</text>
         </view>
         <view class="progress-track">
           <view class="progress-fill" :style="{ width: item.percent + '%' }" />
@@ -187,7 +201,7 @@ onShow(refresh)
     <view class="section">大额{{ kind === 'expense' ? '支出' : '收入' }} · TOP 5</view>
     <view class="card">
       <view v-if="!biggest.length" class="empty">暂无记录</view>
-      <view v-for="entry in biggest" :key="entry.id" class="row top-entry">
+      <view v-for="entry in biggest" :key="entry.id" class="row top-entry" @tap="openEntry(entry.id)">
         <view>
           <view>{{ entry.category }}</view>
           <view class="muted small">{{ entry.date }}</view>
@@ -219,6 +233,15 @@ onShow(refresh)
   font-size: 28rpx;
   margin-top: 10rpx;
   word-break: break-all;
+}
+.comparison-range {
+  padding-top: 16rpx;
+}
+.insight-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.insight-note {
+  margin-top: 24rpx;
 }
 .chart {
   height: 240rpx;

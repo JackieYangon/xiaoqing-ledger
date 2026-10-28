@@ -77,7 +77,13 @@ export const storageLabel = computed(
     })[syncStatus.value],
 )
 export const saveMessage = computed(() => (cloudEnabled ? '已保存到云端' : '已保存到本机'))
-export const recordFilter = ref<{ month: string; kind: Kind; category: string } | null>(null)
+export const recordFilter = ref<{
+  month: string
+  kind: Kind
+  category: string
+  startDate?: string
+  endDate?: string
+} | null>(null)
 let refreshTask: Promise<boolean> | null = null
 onSessionReset(() => {
   currentBookId.value = ''
@@ -163,13 +169,14 @@ export function refresh(): Promise<boolean> {
   })()
   return refreshTask
 }
-async function write(operation: string, args: any, local: () => any) {
+async function write(operation: string, args: any, local: () => any, validateCurrent?: () => void) {
   assertLoggedIn()
   const activeClient = client
   if (refreshTask) await refreshTask
   assertLoggedIn()
   if (client !== activeClient) throw new Error('登录状态已变化')
   if (syncBusy.value) throw new Error('正在处理上一项操作，请稍后再试')
+  validateCurrent?.()
   if (!cloudEnabled) {
     const result = local()
     state.value = localRepository.read()
@@ -205,8 +212,17 @@ export const repository = {
     ),
   remove: (id: string, version: number) =>
     write('remove', { id, version }, () => localRepository.remove(id, version)),
-  setBudget: (month: string, budget: Budget) =>
-    write('setBudget', { month, budget }, () => localRepository.setBudget(month, budget)),
+  setBudget: (month: string, budget: Budget, expectedBudget?: Budget | null) =>
+    write('setBudget', { month, budget }, () => localRepository.setBudget(month, budget), () => {
+      if (expectedBudget === undefined) return
+      const current = (cloudEnabled ? state.value : localRepository.read()).budgets[month] || null
+      const same = current === null || expectedBudget === null
+        ? current === expectedBudget
+        : current.total === expectedBudget.total &&
+          Object.keys(current.categories).length === Object.keys(expectedBudget.categories).length &&
+          Object.entries(current.categories).every(([name, cents]) => expectedBudget.categories[name] === cents)
+      if (!same) throw new Error('预算已在其他设备或页面更新，请重新加载后再保存')
+    }),
   renameCategory: (kind: Kind, name: string, newName: string) =>
     write('renameCategory', { kind, name, newName }, () =>
       localRepository.renameCategory(kind, name, newName),

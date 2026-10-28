@@ -1,5 +1,8 @@
 <script setup>
 import { ref, computed, onUnmounted } from 'vue'
+import RecordsPanel from './components/RecordsPanel.vue'
+import BudgetPanel from './components/BudgetPanel.vue'
+import StatsPanel from './components/StatsPanel.vue'
 import { createCloudClient } from '../../src/core/cloud-client.ts'
 import {
   emptyState,
@@ -9,7 +12,7 @@ import {
   today,
   inMonth,
   summarize,
-  categoryTotals,
+  calculateMoney,
 } from '../../src/core/ledger.ts'
 const api = window.desktopLedger
 const token = ref(''),
@@ -24,6 +27,7 @@ const token = ref(''),
   error = ref(''),
   notice = ref(''),
   page = ref('home')
+const recordFilter = ref(null)
 const qr = ref(''),
   pairCode = ref(''),
   pairScene = ref(''),
@@ -40,8 +44,7 @@ const kind = ref('expense'),
   note = ref(''),
   editing = ref(null),
   linkedRule = ref(''),
-  month = ref(today().slice(0, 7)),
-  budgetInput = ref('')
+  month = ref(today().slice(0, 7))
 const catKind = ref('expense'),
   catName = ref(''),
   renameOld = ref(''),
@@ -58,8 +61,7 @@ const options = computed(() => categoryOptions(snapshot.value, kind.value)),
   catOptions = computed(() => categoryOptions(snapshot.value, catKind.value)),
   expenseOptions = computed(() => categoryOptions(snapshot.value, 'expense'))
 const currentEntries = computed(() => inMonth(snapshot.value.entries, month.value)),
-  summary = computed(() => summarize(currentEntries.value)),
-  totals = computed(() => categoryTotals(currentEntries.value, 'expense'))
+  summary = computed(() => summarize(currentEntries.value))
 const canManage = computed(
   () => !book.value || groups.value.find((g) => g.id === book.value)?.creator === account.value,
 )
@@ -73,6 +75,7 @@ const title = computed(
       categories: '分类管理',
       recurring: '定期记账',
       groups: '群组账本',
+      stats: '统计',
     })[page.value],
 )
 const storage = {
@@ -115,6 +118,20 @@ function reset() {
   book.value = ''
   qr.value = ''
   waiting.value = false
+  editing.value = null
+  linkedRule.value = ''
+  recordFilter.value = null
+  page.value = 'home'
+  amount.value = ''
+  note.value = ''
+  groupName.value = ''
+  joinCode.value = ''
+  invite.value = ''
+  catName.value = ''
+  renameOld.value = ''
+  renameNew.value = ''
+  ruleName.value = ''
+  ruleAmount.value = ''
 }
 async function start() {
   reset()
@@ -191,14 +208,12 @@ async function load() {
   if (!options.value.includes(category.value)) category.value = options.value[0] || ''
   if (!expenseOptions.value.includes(ruleCategory.value))
     ruleCategory.value = expenseOptions.value[0] || ''
-  budgetInput.value = snapshot.value.budgets[month.value]?.total
-    ? money(snapshot.value.budgets[month.value].total)
-    : ''
 }
 async function switchBook(id) {
   if (busy.value) return
   busy.value = true
   error.value = ''
+  notice.value = ''
   const oldClient = client,
     oldBook = book.value
   try {
@@ -211,11 +226,19 @@ async function switchBook(id) {
     rules.value = s.rules || []
     bookName.value = s.bookName || '个人账本'
     editing.value = null
+    linkedRule.value = ''
+    recordFilter.value = null
+    amount.value = ''
+    note.value = ''
+    date.value = today()
+    ruleName.value = ''
+    ruleAmount.value = ''
+    renameOld.value = ''
+    renameNew.value = ''
+    catName.value = ''
+    invite.value = ''
     category.value = categoryOptions(s.state, kind.value)[0] || ''
     ruleCategory.value = categoryOptions(s.state, 'expense')[0] || ''
-    budgetInput.value = s.state.budgets[month.value]?.total
-      ? money(s.state.budgets[month.value].total)
-      : ''
     return true
   } catch (e) {
     client = oldClient
@@ -243,15 +266,38 @@ async function mutate(op, args) {
   await client.mutate(op, args)
   await load()
 }
-function openEntry(entry) {
+function openEntry(entry, selectedDate) {
+  if (busy.value) return
   editing.value = entry || null
   linkedRule.value = entry?.ruleId || ''
   kind.value = entry?.kind || 'expense'
   category.value = entry?.category || categoryOptions(snapshot.value, kind.value)[0] || ''
   amount.value = entry ? money(entry.cents) : ''
-  date.value = entry?.date || today()
+  date.value = entry?.date || selectedDate || today()
   note.value = entry?.note || ''
   page.value = 'entry'
+}
+function copyEntry(entry) {
+  if (busy.value) return
+  openEntry(entry)
+  editing.value = null
+  linkedRule.value = ''
+  date.value = today()
+  const available = categoryOptions(snapshot.value, kind.value)
+  if (!available.includes(category.value)) {
+    category.value = available[0] || ''
+    notice.value = '原账单分类已停用，请确认本次分类后保存。'
+  } else notice.value = '已带入金额和备注，保存后新增一笔账单。'
+}
+const calculated = computed(() => {
+  try { return money(calculateMoney(amount.value)) } catch { return '' }
+})
+const noteSuggestions = computed(() => Array.from(new Set(snapshot.value.entries
+  .filter(e => e.kind === kind.value && e.category === category.value && e.note)
+  .map(e => e.note))).slice(0, 4))
+function drillRecords(filter) {
+  recordFilter.value = filter
+  page.value = 'entries'
 }
 function selectRule() {
   const r = rules.value.find((v) => v.id === linkedRule.value)
@@ -267,12 +313,12 @@ function setKind(k) {
   kind.value = k
   category.value = categoryOptions(snapshot.value, k)[0] || ''
 }
-function saveEntry() {
+function saveEntry(again = false) {
   execute(async () => {
     const draft = {
       kind: kind.value,
       category: category.value,
-      cents: parseMoney(amount.value),
+      cents: calculateMoney(amount.value),
       date: date.value,
       note: note.value,
     }
@@ -285,7 +331,11 @@ function saveEntry() {
         : { createId: 'entry_' + crypto.randomUUID().replaceAll('-', '') }),
     })
     editing.value = null
-    page.value = 'entries'
+    if (again && !prev) {
+      amount.value = ''
+      note.value = ''
+      linkedRule.value = ''
+    } else page.value = 'entries'
     notice.value = '账单已保存'
   })
 }
@@ -296,16 +346,18 @@ function removeEntry(e) {
     notice.value = '账单已删除'
   })
 }
-function saveBudget() {
+function saveBudget(args) {
   execute(async () => {
-    const old = snapshot.value.budgets[month.value] || { categories: {} }
-    await mutate('setBudget', {
-      month: month.value,
-      budget: {
-        total: budgetInput.value.trim() ? parseMoney(budgetInput.value) : 0,
-        categories: old.categories,
-      },
-    })
+    if (!canManage.value) throw Error('群组预算由群主管理')
+    const current = snapshot.value.budgets[args.month] || null
+    const expected = args.expectedBudget
+    const same = current === null || expected === null
+      ? current === expected
+      : !!expected && current.total === expected.total &&
+        Object.keys(current.categories).length === Object.keys(expected.categories).length &&
+        Object.entries(current.categories).every(([name, cents]) => expected.categories[name] === cents)
+    if (!same) throw Error('预算已在其他设备或页面更新，请重新加载后再保存')
+    await mutate('setBudget', { month: args.month, budget: args.budget })
     notice.value = '预算已保存'
   })
 }
@@ -436,6 +488,7 @@ onUnmounted(() => clearInterval(timer))
           v-for="n in [
             ['home', '总览'],
             ['entries', '账单'],
+            ['stats', '统计'],
             ['entry', '记一笔'],
             ['budget', '预算'],
             ['categories', '分类'],
@@ -444,7 +497,8 @@ onUnmounted(() => clearInterval(timer))
           ]"
           :key="n[0]"
           :class="{ active: page === n[0] }"
-          @click="n[0] === 'entry' ? openEntry() : (page = n[0])"
+          :disabled="busy"
+          @click="n[0] === 'entry' ? openEntry() : (recordFilter = null, page = n[0])"
         >
           {{ n[1] }}
         </button>
@@ -466,6 +520,7 @@ onUnmounted(() => clearInterval(timer))
             <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
           </select>
           <button
+            :disabled="busy"
             @click="
               execute(async () => {
                 await refreshWorkspace()
@@ -494,8 +549,9 @@ onUnmounted(() => clearInterval(timer))
         </div>
         <div class="quick">
           <button class="primary" @click="openEntry()">＋ 记一笔</button>
-          <button @click="page = 'entries'">查看账单</button>
-          <button @click="page = 'budget'">设置预算</button>
+          <button :disabled="busy" @click="recordFilter = null; page = 'entries'">查看账单</button>
+          <button :disabled="busy" @click="page = 'stats'">收支统计</button>
+          <button :disabled="busy" @click="page = 'budget'">设置预算</button>
         </div>
         <section class="card">
           <h2>最近账单</h2>
@@ -512,38 +568,14 @@ onUnmounted(() => clearInterval(timer))
         </section>
       </template>
       <template v-else-if="page === 'entries'">
-        <section class="card">
-          <div class="row">
-            <h2>{{ bookName }} · 账单</h2>
-            <input type="month" v-model="month" />
-          </div>
-          <p v-if="!currentEntries.length" class="muted">本月暂无账单。</p>
-          <div v-for="e in currentEntries" :key="e.id" class="line">
-            <div>
-              <b>{{ e.category }}</b>
-              <small>
-                {{ e.date }} · {{ e.author?.name || '微信用户' }} {{ e.note ? '· ' + e.note : ''
-                }}{{ e.automatic ? ' · 自动记账' : '' }}
-              </small>
-            </div>
-            <div class="actions">
-              <b :class="e.kind">{{ e.kind === 'expense' ? '-' : '+' }} ¥ {{ money(e.cents) }}</b>
-              <button @click="openEntry(e)">编辑</button>
-              <button @click="removeEntry(e)">删除</button>
-            </div>
-          </div>
-        </section>
-        <section class="card">
-          <h2>本月支出分类</h2>
-          <div v-for="t in totals" :key="t.name" class="line">
-            <span>{{ t.name }} · {{ t.percent }}%</span>
-            <b>¥ {{ money(t.cents) }}</b>
-          </div>
-        </section>
+        <RecordsPanel :key="book" :state="snapshot" :book-name="bookName" v-model:month="month" :busy="busy" :account="account" :initial-filter="recordFilter" @open-entry="openEntry" @copy-entry="copyEntry" @remove-entry="removeEntry" />
+      </template>
+      <template v-else-if="page === 'stats'">
+        <StatsPanel :key="book" :entries="snapshot.entries" :book-name="bookName" v-model:month="month" @drill="drillRecords" />
       </template>
       <template v-else-if="page === 'entry'">
         <section class="card form">
-          <h2>{{ editing ? '编辑账单' : '新增账单' }} · {{ bookName }}</h2>
+          <div class="row wrap"><h2>{{ editing ? '编辑账单' : '新增账单' }} · {{ bookName }}</h2><button v-if="editing" :disabled="busy" @click="copyEntry(editing)">再记一笔</button></div>
           <div class="row">
             <button :class="{ active: kind === 'expense' }" @click="setKind('expense')">
               支出
@@ -587,8 +619,9 @@ onUnmounted(() => clearInterval(timer))
           <p v-if="!options.length" class="muted">暂无分类，请先到分类管理添加。</p>
           <label>
             金额（元）
-            <input v-model="amount" inputmode="decimal" placeholder="0.00" />
+            <input v-model="amount" maxlength="80" placeholder="0.00 或 18.5+6-2" />
           </label>
+          <p class="muted small">支持加减计算 · {{ calculated ? '结果 ¥ ' + calculated : '输入完整金额或算式' }}</p>
           <label>
             日期
             <input type="date" v-model="date" />
@@ -597,34 +630,12 @@ onUnmounted(() => clearInterval(timer))
             备注
             <input v-model="note" maxlength="100" placeholder="选填" />
           </label>
-          <button class="primary" :disabled="busy" @click="saveEntry">保存账单</button>
+          <div v-if="noteSuggestions.length" class="actions wrap"><button v-for="text in noteSuggestions" :key="text" class="note-suggestion" :title="text" @click="note = text">{{ text }}</button></div>
+          <div class="actions wrap section-actions"><button v-if="!editing" :disabled="busy" @click="saveEntry(true)">保存并再记</button><button class="primary" :disabled="busy" @click="saveEntry(false)">保存账单</button></div>
         </section>
       </template>
       <template v-else-if="page === 'budget'">
-        <section class="card form">
-          <h2>每月总预算 · {{ bookName }}</h2>
-          <label>
-            月份
-            <input
-              type="month"
-              v-model="month"
-              @change="
-                budgetInput = snapshot.budgets[month]?.total
-                  ? money(snapshot.budgets[month].total)
-                  : ''
-              "
-            />
-          </label>
-          <label>
-            预算（元）
-            <input v-model="budgetInput" :disabled="!canManage" placeholder="留空表示不设限" />
-          </label>
-          <p class="muted">本月支出 ¥ {{ money(summary.expense) }}。现有分类预算保存时会保留。</p>
-          <button class="primary" :disabled="busy || !canManage" @click="saveBudget">
-            保存预算
-          </button>
-          <p v-if="!canManage" class="muted">群组预算由群主管理。</p>
-        </section>
+        <BudgetPanel :key="book" :state="snapshot" :book-name="bookName" v-model:month="month" :busy="busy" :can-manage="canManage" @save="saveBudget" />
       </template>
       <template v-else-if="page === 'categories'">
         <section class="card">

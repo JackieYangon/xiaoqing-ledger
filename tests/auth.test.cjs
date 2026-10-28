@@ -53,6 +53,20 @@ function load(name) {
  assert.equal(auth.currentUser.value.accountId,user)
  assert.equal(await ledger.refresh(),true)
  assert.equal(ledger.accountId.value,user)
+ // A foreground refresh must not let an old budget draft use a newer cloud revision.
+ const budgetMonth='2026-10', budgetBaseline={total:10000,categories:{餐饮:5000}}
+ ledger.state.value.budgets[budgetMonth]=budgetBaseline
+ let finishBudgetRefresh
+ nextRead=new Promise(resolve=>{finishBudgetRefresh=resolve})
+ const budgetRefresh=ledger.refresh(); await new Promise(resolve=>setImmediate(resolve))
+ const staleBudgetSave=ledger.repository.setBudget(budgetMonth,{total:20000,categories:{}},budgetBaseline)
+ const staleBudgetRejected=assert.rejects(staleBudgetSave,/预算已在其他设备或页面更新/)
+ const refreshedSettings=core.emptyState()
+ refreshedSettings.budgets[budgetMonth]={total:30000,categories:{餐饮:8000}}
+ finishBudgetRefresh({ok:true,accountId:user,revision:1,count:0,settings:refreshedSettings})
+ assert.equal(await budgetRefresh,true)
+ await staleBudgetRejected
+ assert.equal(ledger.state.value.budgets[budgetMonth].total,30000)
  // Logout must reject a delayed response from the old account, even after B logs in.
  let release
  nextRead=new Promise(r=>{release=r})
