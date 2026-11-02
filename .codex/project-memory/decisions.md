@@ -1,24 +1,26 @@
-# Product rules and technical conventions
+# 产品规则与技术约定
 
-Updated: 2026-11-02. Sources: current user instructions, `AGENTS.md`, and the implementation/test evidence listed below. Historical product rules were first recorded on 2026-10-28.
+更新日期：2026-11-02。来源：当前用户要求、AGENTS.md 和下列实现及测试。产品规则最初记录于 2026-10-28。
 
-## Current collaboration and release decisions
+## 协作与发布约定
 
-- **User confirmed, 2026-11-02:** new or updated repository-facing prose is English, including Git commits, documentation, PRs, issues/comments, release titles/notes and developer-facing script messages/comments. Keep application interface text in its established language unless a translation is requested.
-- **User confirmed, 2026-11-02:** commit and push completed, validated changes without asking again. Do not force-push. Preserve local commits and explain a failed push. The user specifically authorized publishing the v1.0.4 repository release in this task; do not request redundant permission.
-- **User confirmed / scope, 2026-11-02:** ordinary pushes, repository releases, cloud deployment, mini program upload/review and desktop installer publication are distinct actions. The v1.0.4 source-release authorization does not establish that the other actions occurred. Record actual outcomes with evidence.
-- **Implemented / observed, 2026-11-02:** the current sign-in recovery addresses local configuration and stale compilation cache. Clear only the compilation cache when refreshing the bundle; preserve application storage, pending requests, legacy data and remembered sessions. Evidence: configuration scripts, README troubleshooting and the simulator observation recorded in `status.md`.
-- **Implemented, 2026-11-02:** guest preview remains available without cloud settings. Upload preparation requires both AppID and cloud environment through `--require-cloud`, including `--prepare-only`. Missing deployment settings fail before release-project creation. Evidence: `scripts/prepare-local-config.cjs`, `scripts/upload-mp-weixin.cjs` and regression coverage.
+- **用户确认，2026-11-02**：仅 Git 提交信息使用英文。默认 README、发布标题及说明、其他项目文档、协作约定和项目记忆继续中文，界面等内容保持原有中文；README.en.md 保留英文译本用途。
+- **用户确认，2026-11-02**：完成授权修改并通过适用验证后直接提交和推送，不重复询问；推送失败保留提交并说明，不强推。当前已授权补发 v1.0.4-r1 及完整桌面发布附件。
+- **发布约定，2026-11-02**：延续历史版本交付格式，包含对应版本 Windows EXE、中文 Quickstart 和 SHA256SUMS；先建草稿，全部附件上传并核验版本、大小、校验值及完整性后才发布。未经明确范围变更，不得改成仅源码发布。
+- **已核验 / 用户确认，2026-11-02**：v1.0.4 已发布、锁定且无自定义附件，保留提交和标签历史；不能追加附件或靠删除重建复用标签。用户选择 v1.0.4-r1 补发，不移动或覆盖旧标签。
+- **范围约定**：普通推送、版本发布、云部署、小程序上传/审核是不同动作。按本次会话已有授权继续工作，分别记录实际结果；草稿、构建成功和正式发布不是同一状态。
+- **实际观察，2026-11-02**：登录恢复依赖正确配置及清除旧编译缓存。只清编译缓存，不删除应用存储、待确认请求、旧账单或登录记录。
+- **代码已实现，2026-11-02**：游客预览允许缺少云配置；上传及 --prepare-only 使用 --require-cloud 要求 AppID 和云环境，缺失则在配置写入、构建和创建上传项目之前失败。此检查验证存在及格式，不替代实际云端联调。
 
-## Product and data rules
+## 产品与数据规则
 
-- **User confirmed / implemented, recorded 2026-10-28:** account ledgers are isolated by trusted platform identity. Desktop pairing links the same account. Personal and group books are separate, and personal entries are not automatically shared. The server checks permissions. Evidence: `cloudfunctions/ledger/handler.js`, `features.js`, `desktop-auth.js`, `src/services/ledger.ts`.
-- **Historical discrepancy, retained 2026-11-02:** earlier background required login for all business features, while baseline `4c8a3d2` already allowed in-memory guest entries, categories, budgets and statistics. Formal cloud operations require login. Preserve existing behavior rather than inferring a product change from older prose; record any future requested scope change explicitly.
-- **User confirmed / implemented, recorded 2026-10-28:** profile fields are optional and saved only after explicit choice and confirmation. Do not obtain profiles silently or substitute a nickname for identity. Entries retain author snapshots; keep old avatar files for history. Evidence: `src/pages/profile/index.vue`, `cloudfunctions/ledger/features.js`.
-- **User confirmed / implemented, recorded 2026-10-28:** recurring rules use weekly/monthly cycles and Beijing time; dates 29–31 clamp to month end. They create records, not payments. Explicit book/rule/period associations prevent duplicates; ordinary equal-amount/category entries are not merged. Manual-first skips automatic creation, and automatic-first updates the existing entry. Deleting an associated entry retains its period marker. Rule deletion retains its tombstone and historical editability. Resuming does not backfill paused periods; a creator leaving the group pauses their rules. Evidence: handler, features and `tests/features.test.cjs`.
-- **User confirmed / implemented, recorded 2026-10-28:** all categories can be renamed or deleted, including deleting every category. Historical entries and budgets retain old names. Renaming updates recurring rules; deletion pauses linked rules. Evidence: `src/core/ledger.ts`, handler and feature tests.
-- **User confirmed / implemented, recorded 2026-10-28:** preserve the date picker, monthly recurring-date grid and both states of the four bottom navigation icons. Asset changes need actual mini program display checks. Evidence: entry/recurring pages and `src/pages.json`.
-- **User confirmed / implemented, recorded 2026-10-28:** package gates are main package below 1500000 bytes, `requiredComponents` injection, and individual image/audio assets no larger than 200000 bytes. Run checks against generated output; source estimates do not replace build/upload checks.
-- **User confirmed / implemented, recorded 2026-10-28:** maintain schema 1/2 compatibility and integer-cent amounts. Validation/storage failures must preserve original data. Legacy migration is explicit and only to a personal book. Imports process at most 20 entries per batch, skip existing IDs and preserve existing budgets. Evidence: core, cloud client, handler and ledger/cloud tests.
-- **User confirmed / implemented, recorded 2026-10-28:** keep copied gateway files flat in the gateway root. Do not change deployment layout, broadly upgrade dependencies or rewrite release workflows without task authorization. A timer configuration alone is not proof of execution.
-- **User confirmed, reaffirmed 2026-11-02:** use Xiaoqing Ledger's own branding and avoid comparisons with other bookkeeping products. Public files must exclude real deployment identifiers, secrets and personal data. Project memory is repository-local and never reads or modifies global user memory.
+- **用户确认 / 代码已实现**：正式账本按可信平台身份隔离，桌面扫码关联同一用户。个人与群组账本独立，在“我的”切换，个人记录不得自动公开，服务端校验权限。证据：cloudfunctions/ledger/handler.js、features.js、desktop-auth.js、src/services/ledger.ts。
+- **历史差异**：更早背景要求所有业务登录后访问，但 4c8a3d2 已支持游客内存试记、分类、预算和统计；正式云端接口仍需登录。保留现有行为，不因旧描述回退；以后用户要求改变边界时再记录明确范围。
+- **用户确认 / 代码已实现**：资料需主动选择头像、填写昵称并确认保存，两项可空；不静默获取资料或用昵称代替账号身份。账单保留记账人快照，不删除历史头像。证据：src/pages/profile/index.vue、features.js。
+- **用户确认 / 代码已实现**：定期任务按周/月及北京时间运行，短月 29–31 日落到月底；只生成账单，不支付。显式关联项目，以账本+项目+周期去重，普通同金额同分类账单不合并。手动先记自动跳过，自动先记手动更新同一记录。删除关联账单保留周期标记；删除规则保留停用墓碑及历史可编辑性；恢复暂停不补记暂停期间；创建者退群后任务自动暂停。证据：handler、features、tests/features.test.cjs。
+- **用户确认 / 代码已实现**：所有分类可改可删、也可删空；历史账单及预算保留原名，重命名同步定期规则，删除分类暂停关联任务。证据：src/core/ledger.ts、handler 和功能测试。
+- **用户确认 / 代码已实现**：保留日期选择器、月度定期日期网格及底部四项导航的两套状态图标；资源修改后须实际核验显示。证据：记账页、定期页、src/pages.json。
+- **用户确认 / 代码已实现**：主包小于 1500000 字节，requiredComponents 按需注入，单图片/音频不超过 200000 字节；以生成包执行质量检查，不以源码估算代替构建和上传检查。
+- **用户确认 / 代码已实现**：保留 schema 1/2 兼容，金额整数分，校验或存储失败不覆盖原数据。旧本地迁移由用户明确确认且仅到个人账本；导入每批最多 20 笔，相同 ID 跳过，已有预算和隐私设置保留。证据：核心、cloud-client、handler 和账本/云端测试。
+- **用户确认 / 代码已实现**：网关文件保持根目录平铺；不擅自改变部署布局、整体升级依赖或改写发布流程。timer 配置存在不等于云端执行。不同系统采用适用路径及工具，不照搬历史机器命令。
+- **用户确认**：只使用小青账本品牌表述，不引入其他记账产品或对标宣传；公开资料不含真实部署标识、密钥及个人数据。记忆只服务本仓库，不读写用户全局记忆。

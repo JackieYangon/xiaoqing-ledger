@@ -1,16 +1,22 @@
-# Repository collaboration rules
+# 项目协作约定
 
-- The repository root is the directory containing this `AGENTS.md` and `package.json`. Use paths relative to that directory; do not assume a machine-specific checkout location.
-- After each authorized code change is complete and relevant validation passes, create a Git commit describing the concrete change and push it to the `origin` remote without asking again. If pushing fails, keep the local commit and report the reason. Never force-push over remote history.
-- Write all new or updated repository-facing prose in English. This includes documentation, Git commit messages, pull request titles and descriptions, issues and comments, release titles and notes, and developer-facing script messages and comments. Keep application interface text in its established language unless the user explicitly requests a translation.
-- Frontend source belongs in `src`; cloud source belongs in `cloudfunctions`. `dist` contains generated output: do not edit it directly or commit it. Keep local deployment configuration, credentials and generated release output out of Git.
-- Data-format changes must remain compatible with existing ledger records. A storage or validation failure must not overwrite original user data. Troubleshooting compilation must preserve application storage, legacy records and pending requests; clear only the compilation cache when that is the relevant remedy.
-- Use Xiaoqing Ledger's own terminology in branding, interface text, documentation and commit descriptions. Do not introduce third-party product names, links or comparisons as product branding or positioning.
+- 本项目根目录以当前 Git 工作树为准，即包含本文件和 `package.json` 的目录；使用仓库相对路径，不依赖历史机器的盘符或检出位置。
+- 按用户要求，每轮代码修改完成并通过相关验证后，直接创建 Git 提交并推送到远程仓库 origin，提交信息说明具体改动，无需再次询问。若推送失败，保留本地提交并说明原因；不得强制推送覆盖远程历史。
+- **仅 Git 提交信息使用英文。** 默认 README、发布标题及说明、其他项目文档、协作约定和项目记忆继续使用中文，界面及其他内容维持原有中文表述；不得把提交信息的语言要求扩大到整个仓库。保留 `README.en.md` 作为英文译本，并维护双语入口。
+- 前端源码在 `src` 中，云端源码在 `cloudfunctions` 中；`dist` 为生成文件，不直接修改或提交。本地部署配置、凭据及生成的发布产物不加入 Git。
+- 数据格式升级必须兼容已有账单，存储或校验失败时不得覆盖原始数据。排查编译问题时保留应用存储、旧账单、待确认请求及登录记录；需要刷新旧代码时仅清除编译缓存。
+- 品牌、界面文案、文档及提交说明仅使用小青账本自身表述，不加入其他产品名称、链接或对标描述作为品牌宣传。
 
-## Repository-local project memory
+## 版本发布
 
-- Before relevant work, read `.codex/project-memory/README.md`, then follow its index to check the current status, decisions, architecture and workflows. Verify implementation details against source and tests; historical documentation is not evidence of current validation.
-- Update the relevant memory entries when important facts change, instead of appending contradictory states. Date important conclusions, cite their evidence and distinguish implemented code, passed tests, user confirmation and unverified claims.
-- Store only public project facts and conventions in this repository's memory. Do not read, import or modify the user's global memory. Do not record actual deployment identifiers, secrets, session credentials, user data or private absolute paths; use variable names and repository-relative paths.
-- Check Git status before editing and preserve existing work. After code or documentation changes, run applicable checks and review the diff for correctness and sensitive information before committing and pushing to `origin`. Retain local commits if pushing fails, report the reason and never force-push.
-- Record conflicts between background information, older documentation and the implementation in the project status before changing product behavior. Ordinary commits and pushes do not authorize a release, deployment or history rewrite; those actions require authorization for the specific task. Apply authorization already given in the conversation without asking again.
+- 版本发布沿用已有交付格式，包含对应版本的 Windows EXE、中文安装及使用说明、`SHA256SUMS.txt`；除非用户明确改变范围，不得擅自发布仅有源码的版本。
+- 先创建发布草稿，上传全部预期附件并核对版本、文件大小、校验值和完整性后，再正式发布；源码归档不能代替桌面安装包。构建、上传和实际安装验证分别记录，不互相替代。
+- 发布前检查远程状态。已锁定的发布及标签保留历史，不通过删除重建、移动标签或强推规避锁定；需要补发时使用用户明确选择的新版本。
+
+## 项目独立记忆
+
+- 开始相关工作前阅读 `.codex/project-memory/README.md`，按索引核对状态、决策、架构及工作流；具体实现以源码和测试为准，历史文档不能代替当前验证。
+- 重要变化同步更新对应记忆，替换过时结论，不叠加相互矛盾的状态；注明日期、证据，并区分代码已实现、测试通过、用户确认、实际观察和尚未验证。
+- 记忆仅限本仓库公开信息，不读取、迁入或修改用户全局记忆，不记录真实部署标识、密钥、会话凭据、用户数据或私人绝对路径；配置仅记录变量名及仓库相对位置。
+- 修改前核对 Git 状态，保护已有工作。每轮代码或文档修改完成后，执行适用验证并检查差异及敏感信息，再提交并推送 origin；推送失败保留本地提交并说明，禁止强制推送。
+- 发现背景、旧文档与实现冲突，先在项目状态中记录，不凭旧描述修改产品行为。普通推送不等于发布版本、提交审核或部署云函数；这些操作须有对应任务授权，已在会话中获得的授权无需重复询问。

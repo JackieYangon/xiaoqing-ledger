@@ -1,9 +1,9 @@
 <p align="center"><img src="src/static/avatar.png" width="88" height="88" alt="Xiaoqing Ledger logo" /></p>
 <h1 align="center">Xiaoqing Ledger</h1>
 <p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
-<p align="center">English documentation · <a href="docs/releases/v1.0.4.md">v1.0.4 release notes</a></p>
+<p align="center"><a href="README.md">简体中文</a> · <b>English</b> · <a href="docs/releases/v1.0.4-r1.md">v1.0.4-r1 release notes</a></p>
 <p align="center">
-  <a href="#whats-new-in-v104"><img src="https://img.shields.io/badge/version-1.0.4-237859?style=flat-square" alt="Version 1.0.4" /></a>
+  <a href="#whats-new-in-v104-r1"><img src="https://img.shields.io/badge/version-1.0.4--r1-237859?style=flat-square" alt="Version 1.0.4-r1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
@@ -11,7 +11,7 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
 <p align="center"><a href="#screenshots">Screenshots</a> · <a href="#demo">Live demo GIF</a> · <a href="#features">Features</a> · <a href="#getting-started">Getting started</a> · <a href="#deploying-cloud-development">Cloud deployment</a></p>
-<p align="center">Version 1.0.4 · Local setup fixes · Correct build paths · Sign-in recovery</p>
+<p align="center">Version 1.0.4-r1 · Local setup fixes · Correct build paths · Sign-in recovery</p>
 
 <a name="screenshots"></a>
 <h2 align="center">A look inside</h2>
@@ -45,11 +45,13 @@ The interface is currently in Simplified Chinese; this README provides English s
 
 ---
 
-**Release status: Preview source release.** See the [v1.0.4 release notes](docs/releases/v1.0.4.md) for the local configuration, build-directory and sign-in recovery fixes.
+**Release status: Pre-release.** See the [v1.0.4-r1 release notes](docs/releases/v1.0.4-r1.md) for the retained local configuration/build-directory fixes, sign-in recovery and installation instructions.
 
-The Windows preview remains available from the [v1.0.3 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.3). Desktop v1.0.3 is a pre-release, uses the trial mini program and requires WeChat trial access. This source release does not include a new v1.0.4 desktop installer.
+The Windows x64 installer, quickstart and SHA-256 checksums are listed with the [v1.0.4-r1 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1). The unsigned preview installer passed its build and static payload checks; actual installation and complete QR sign-in acceptance have not been performed. Trial mini program access requires the corresponding membership. The earlier [v1.0.4 release](docs/releases/v1.0.4.md) contains source only, without a desktop installer.
 
-## What's new in v1.0.4
+During the earlier v1.0.4 checks on 2026-11-02, simulator sign-in displayed the personal account and synchronized cloud status for an empty ledger. Physical-device and multi-account acceptance were not performed. Revision r1 retains the same backend authentication logic and has separate version checks and mini program/desktop builds. Publishing the repository is separate from uploading the mini program, submitting it for review or making it public.
+
+## What's new in v1.0.4-r1
 
 - Development and production builds now set the repository's mini program directory to the output they actually generate, resolving the missing `app.json` error when importing the repository root.
 - Setup and type checks preserve the selected development or production directory.

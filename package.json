@@ -1,6 +1,6 @@
 {
   "name": "xiaoqing-ledger",
-  "version": "1.0.4",
+  "version": "1.0.4-r1",
   "scripts": {
     "dev:mp-weixin": "node scripts/prepare-local-config.cjs --mp-mode dev && uni -p mp-weixin",
     "build:mp-weixin": "node scripts/prepare-local-config.cjs --mp-mode build && uni build -p mp-weixin && node scripts/check-mp-quality.cjs",

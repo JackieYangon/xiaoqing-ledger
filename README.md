@@ -1,114 +1,115 @@
-<p align="center"><img src="src/static/avatar.png" width="88" height="88" alt="Xiaoqing Ledger logo" /></p>
-<h1 align="center">Xiaoqing Ledger</h1>
-<p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
-<p align="center">English documentation · <a href="docs/releases/v1.0.4.md">v1.0.4 release notes</a></p>
+<p align="center"><img src="src/static/avatar.png" width="88" height="88" alt="小青账本标志" /></p>
+<h1 align="center">小青账本</h1>
+<p align="center"><b>把日子，记清楚。</b><br />基于 uni-app、Vue 3 和 TypeScript 的微信记账小程序。</p>
+<p align="center"><b>简体中文</b> · <a href="README.en.md">English</a></p>
 <p align="center">
-  <a href="#whats-new-in-v104"><img src="https://img.shields.io/badge/version-1.0.4-237859?style=flat-square" alt="Version 1.0.4" /></a>
+  <a href="#v104r1"><img src="https://img.shields.io/badge/version-1.0.4--r1-237859?style=flat-square" alt="版本 1.0.4-r1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&amp;logo=vuedotjs&amp;logoColor=white" alt="Vue 3" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
-<p align="center"><a href="#screenshots">Screenshots</a> · <a href="#demo">Live demo GIF</a> · <a href="#features">Features</a> · <a href="#getting-started">Getting started</a> · <a href="#deploying-cloud-development">Cloud deployment</a></p>
-<p align="center">Version 1.0.4 · Local setup fixes · Correct build paths · Sign-in recovery</p>
+<p align="center"><a href="#screenshots">界面预览</a> · <a href="#demo">操作演示</a> · <a href="#主要功能">功能介绍</a> · <a href="#启动">快速开始</a> · <a href="#微信云开发">云端部署</a></p>
+<p align="center">版本 1.0.4-r1 · 本地配置修复 · 构建目录修复 · 登录问题排查</p>
 
 <a name="screenshots"></a>
-<h2 align="center">A look inside</h2>
-<p align="center">Explore first and choose when to sign in. Preview the sign-in, category and recurring schedule pages below.</p>
+<h2 align="center">界面预览</h2>
+<p align="center">先浏览体验，再自主登录；以下展示登录、分类管理与定期记账页面。</p>
 <table align="center" width="100%">
   <tr>
-    <td width="33%" align="center" valign="top"><h3>Optional sign-in</h3><img src="docs/images/login.png" width="220" alt="Xiaoqing Ledger sign-in page" /><p>Explore first, then sign in to access your cloud ledger.</p></td>
-    <td width="33%" align="center" valign="top"><h3>Category management</h3><img src="docs/images/categories.png" width="220" alt="Category management" /><p>Rename or delete any category.</p></td>
-    <td width="33%" align="center" valign="top"><h3>Recurring schedules</h3><img src="docs/images/recurring.png" width="220" alt="Recurring schedules" /><p>Choose a monthly date in one tap.</p></td>
+    <td width="33%" align="center" valign="top"><h3>自主登录</h3><img src="docs/images/login.png" width="220" alt="小青账本登录页面" /><p>体验后可选择登录，使用正式云端账本。</p></td>
+    <td width="33%" align="center" valign="top"><h3>分类管理</h3><img src="docs/images/categories.png" width="220" alt="分类管理" /><p>所有分类统一管理，支持修改与删除。</p></td>
+    <td width="33%" align="center" valign="top"><h3>定期记账</h3><img src="docs/images/recurring.png" width="220" alt="定期记账" /><p>日历式网格点选每月记账日期。</p></td>
   </tr>
 </table>
 
 <a name="demo"></a>
-<h2 align="center">Choose a day. Repeat every month.</h2>
+<h2 align="center">点选一天，每月自动记录。</h2>
 <table align="center" width="100%">
   <tr>
-    <td width="36%" align="center" valign="middle"><img src="docs/images/recurring-selection.gif" width="260" alt="Selecting monthly recurring dates" /><br /><sub>Monthly day selection</sub></td>
+    <td width="36%" align="center" valign="middle"><img src="docs/images/recurring-selection.gif" width="260" alt="点选每月记账日期" /><br /><sub>每月日期选择演示</sub></td>
     <td width="64%" valign="top">
-<h3>Set a schedule in three steps</h3>
-<ol><li><b>Choose a cycle</b><br />Monthly or weekly, for recurring expenses such as rent or subscriptions.</li><li><b>Select the date</b><br />Tap 1–31 in the monthly grid. Dates beyond the month length use its last day.</li><li><b>Enter the amount and category</b><br />Create the rule; the cloud scheduler checks due rules every five minutes after its trigger is deployed.</li></ol>
-<h3>Keep one entry per period</h3>
-<ul><li>Link a manual expense to the rule to prevent duplicate automatic records.</li><li>Pause a rule, or delete it while keeping historical entries.</li><li>Schedules create ledger records, not actual payments.</li></ul>
-<p><b>More than recurring entries</b><br />Switch between personal and group books, share group budgets, review trends, and export JSON or CSV backups.</p>
-<p><a href="#getting-started">Set up your own instance →</a></p>
+<h3>三步设置定期记账</h3>
+<ol><li><b>选择周期</b><br />支持每月或每周，适用于房租、订阅等固定支出。</li><li><b>点选日期</b><br />在 1–31 日网格中直接选择；短月份自动按月底执行。</li><li><b>填写金额与分类</b><br />创建项目并部署触发器后，云端每 5 分钟检查到期任务。</li></ol>
+<h3>同一周期，只记一笔</h3>
+<ul><li>手动记账关联定期项目，避免自动重复记录。</li><li>支持暂停和删除任务，保留历史账单。</li><li>定期记账仅生成账单，不发起真实扣款。</li></ul>
+<p><b>日常记账也齐全</b><br />个人与群组账本切换、群组共享预算、收支趋势统计，以及 JSON / CSV 数据导出。</p>
+<p><a href="#启动">部署自己的小青账本 →</a></p>
     </td>
   </tr>
 </table>
-<p align="center"><sub>Actual mini program screenshots; the GIF plays captured selection steps with pauses. No records were created or deleted.</sub></p>
+<p align="center"><sub>实际小程序界面截图；GIF 按步骤播放日期选择过程，没有创建或删除账单。</sub></p>
 
-The interface is currently in Simplified Chinese; this README provides English setup and usage instructions. Media excludes personal profiles, transaction details, invitation codes and deployment identifiers. Files in `docs/images/` are not included in the mini program package.
+界面目前为简体中文，英文 README 提供英文使用与部署说明。素材未包含真实头像、昵称、账单明细、邀请码或部署标识；`docs/images/` 不进入小程序安装包。
 
 ---
 
-**Release status: Preview source release.** See the [v1.0.4 release notes](docs/releases/v1.0.4.md) for the local configuration, build-directory and sign-in recovery fixes.
+**发布状态：体验测试版（Pre-release）。** 本版保留本地配置与构建目录修复，并补充登录恢复及安装说明；详见 [v1.0.4-r1 发布说明](docs/releases/v1.0.4-r1.md)。
 
-The Windows preview remains available from the [v1.0.3 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.3). Desktop v1.0.3 is a pre-release, uses the trial mini program and requires WeChat trial access. This source release does not include a new v1.0.4 desktop installer.
+Windows x64 安装包、使用说明和 SHA-256 校验文件见 [v1.0.4-r1 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1)。安装包已通过构建与静态内容核对，为未签名体验测试版，使用小程序体验版时需要体验成员权限；尚未完成实际安装及完整扫码验收。此前的 [v1.0.4](docs/releases/v1.0.4.md) 仅提供源码，没有电脑端安装包。
 
-## What's new in v1.0.4
+2026-11-02 较早的 v1.0.4 验证在开发者工具模拟器中确认了登录成功，个人账号与云同步状态正常显示，测试账本为空；未进行真机或多账号验收。r1 保留相同的服务端认证逻辑，另行完成版本检查及小程序、电脑端构建。仓库发布与小程序上传、提交审核及上线相互独立。
 
-- Development and production builds now set the repository's mini program directory to the output they actually generate, resolving the missing `app.json` error when importing the repository root.
-- Setup and type checks preserve the selected development or production directory.
-- Local configuration generation preserves an existing AppID when no replacement is supplied. Invalid arguments, identifiers or malformed configuration files fail before generated configuration is written.
-- Upload preparation requires both an AppID and a cloud environment, preventing a guest-only build from being prepared as an account-enabled release. Ordinary builds still support guest previews.
-- The [sign-in troubleshooting guide](#sign-in-troubleshooting) explains how to rebuild with local deployment settings and refresh a stale compilation cache while preserving user data.
+<a name="v104r1"></a>
+## 1.0.4-r1 更新
 
-## Features
+- 开发和生产构建会把根项目的小程序目录设为对应产物目录，修复导入仓库根目录时找不到 `app.json` 的问题。
+- 普通配置生成和类型检查保留已选择的开发或生产目录。
+- 未提供替代值时，配置生成保留本地项目已有的 AppID；参数、标识或配置文件格式错误会在写入生成配置前报错。
+- 上传准备要求同时配置 AppID 和云环境，避免将缺少账号配置的游客预览构建用于发布；普通构建仍支持游客预览。
+- [登录问题排查](#登录问题排查)说明如何使用本地配置重新构建，并仅清理编译缓存来刷新旧产物，保留用户数据。
 
-- **Explore before signing in:** first launch without a saved login opens the home page with a sample ledger. Try recording entries, filtering bills, statistics, budgets and category management without signing in. Trial edits remain only in memory for the current app session and never become part of an account's ledger. After you choose to sign in, later launches verify and restore the same account automatically.
-- **Account sign-in and cloud sync:** choose to sign in when you want your personal cloud ledger, shared books, recurring records or backup tools. Ownership is verified on the server. Sign in to the same account on another phone to retrieve synced records.
-- **Optional profile:** no phone number is required. Avatars and nicknames are optional, saved only after your explicit choice and confirmation, and are not required for bookkeeping. New records retain a snapshot of their author's profile. Names cannot be used to impersonate another account.
-- **Personal and group ledgers:** switch books from the profile page. Personal records are not automatically shared. Group members see shared records and their authors, and can edit or delete their own entries. The creator manages shared budgets, categories and imports.
-- **Group invitations:** join through a WeChat share card or a 16-character invitation code. Invitations expire after seven days; generating a new invitation invalidates the previous one. Limits: 20 members per group and 20 groups per account. Members can leave; creators can delete an empty group with no rules or other members.
-- **Fast entry:** income and expense categories, arithmetic amounts such as `18.5+6-2`, a numeric keypad, note suggestions, and save-and-add-another. Existing records can be copied as new entries.
-- **Records and calendar:** combine monthly, custom-date or all-date views with type, historical category, keyword and inclusive amount filters. Search categories, notes and authors; sort by date or amount and export filtered CSV. Calendar totals support backdated entry. The mini program and desktop share the filtering rules.
-- **Budgets:** monthly total and category budgets, remaining amounts and overspending indicators on both clients. Copy the previous month's budget into a draft or fill the total from category limits, then save explicitly. Historical categories are retained. Daily allowance divides the remaining total by days left including today; future months use the full month and past months have no daily allowance.
-- **Statistics:** monthly/yearly summaries, trends, category rankings and largest entries on both clients, with savings rate, daily average expenses and days without recorded expenses. Current periods compare through today's calendar date against the corresponding date in the previous period, clamped at month end; historical periods compare complete periods. Future-dated entries are excluded from current-period statistics. Savings rate is undefined without income; a day without recorded expenses does not establish that no spending occurred. Hiding amounts affects the home page only.
-- **Editable categories:** every category can be renamed or deleted, including the initial categories. Up to 50 categories per income/expense type. Historical entries and existing category budgets retain their original labels. Renaming updates recurring rules; deletion pauses affected rules. Empty category lists remain empty until a category is added.
-- **Recurring records:** weekly or monthly schedules, with a 1–31 day grid for monthly rules. Short months use the last day for dates beyond their length. Rules use Beijing time and do not backfill periods before creation. This creates bookkeeping entries, **not actual payments**. Up to 50 rules per ledger.
-- **Explicit deduplication:** link a manual expense to its recurring rule. Only one entry is kept per book/rule/period. A manual entry prevents automatic creation; a later manual entry updates an automatically generated one. Unlinked entries are not deduplicated by guessing from amount or category.
-- **Pause and delete rules:** resume without backfilling the paused period. Deleting a rule stops future generation and preserves existing entries. Only its creator or the group creator may manage a group rule. A departed member's rules are paused by the scheduler. Deleting a linked entry preserves its period marker so it is not recreated automatically.
-- **Backup and export:** JSON backup validation and merge, plus CSV export. Existing entry IDs are skipped on import and current budgets are preserved. CSV is for export, not restoration.
+## 主要功能
 
-## Getting started
+- **先体验后登录**：首次打开进入首页示例账本，可试记、筛选账单、查看统计、设置预算及管理分类；登录由用户主动选择。体验修改仅保存在内存、本次打开期间有效，不会读取旧版账单或迁入正式账本。
+- **跨端筛选、预算与统计**：小程序和电脑端共用日期及金额范围筛选、预算复用和同进度统计逻辑；电脑端补齐收支日历、分类预算、月度/年度统计及复制账单。预算复制仅填入草稿，后台同步发现其他设备更新时阻止旧草稿覆盖。
+- **可选资料**：登录后可在「我的」进入资料页，主动选择头像、填写昵称并确认保存；两项均可留空，不影响记账功能，也不要求手机号。账号归属由服务端身份决定，昵称不能用来切换或冒用账号。资料保存后，新账单记录当时的记账人资料。
+- **账本切换**：「我的 → 切换账本」选择个人或已加入群组。首页、账单、统计和预算都随账本切换，记账页显示当前账本。个人记录不会自动共享；旧本地迁移仅允许迁入个人账本。
+- **群组**：「我的 → 群组与账本」创建或加入。群主生成有效期 7 天的邀请，可用微信分享卡片或 16 位邀请码加入；重新生成会使旧邀请失效。成员能看群组账单和记账人，只能修改/删除自己的记录；群主管理共享预算、分类及批量导入。成员退出后失去访问权，历史记录保留。群主暂不能退出；没有账单、定期项目和其他成员时可删除空群组。每个群组最多 20 名成员，每个账号最多加入 20 个群组。
+- **定期记账**：每个账本最多 50 个项目，支持每周与每月。每月 29–31 日遇短月份按月底执行，使用北京时间；从创建当日或下一次到期日开始，不追溯创建前的月份。定时任务每 5 分钟检查到期项目，生成账单而非真实扣款；「立即校验到期项目」可补偿处理已到期项目。
+- **周期去重**：手动保存时显式关联定期项目，以「账本 + 项目 + 周期」保证唯一。手动先记则自动跳过；自动先生成则手动更新同一记录。普通未关联账单不会仅凭金额/分类被合并。删除关联账单保留周期标记，避免自动恢复；暂停再开启不补记暂停期间。群组定期项目为群组共用，创建者退出后自动暂停。
+- **导航图标**：首页、账单、统计、我的均提供普通与选中两套图标。
 
-Requirements: Node.js 20+, pnpm, WeChat Developer Tools, and your own mini program AppID and Cloud Development environment.
+## 功能
+
+- **快速记账**：分类选择、金额加减计算（如 `18.5+6-2`）、自定义数字键盘、常用备注建议、保存并再记、复制历史账单再记一笔。
+- **收支明细**：按月、自定义日期区间或全部日期查询，组合收支类型、分类、关键词及金额范围筛选；关键词涵盖分类、备注和记账人，历史分类仍可选择。支持日期或金额升降序、筛选结果 CSV 导出；日历显示每日收支，选中日期可补记。
+- **预算管理**：每月独立总预算及分类限额，剩余预算、进度和超支提示；沿用上月总额及分类预算、将分类合计填入总预算。快捷操作仅修改草稿，点击保存后才同步；复制保留历史分类。当前月按含今天的剩余天数计算每日可用额度，未来月按整月计算，过去月份不再提示每日可用。空金额表示不设限，分类限额不自动分摊总预算。
+- **统计**：月度/年度收支、结余、结余率、日均支出、无支出记录天数、每日/每月趋势、分类排行、前五笔大额记录。当前周期仅统计截至今天的账单，与上期对应日期比较；短月份按月底截断，历史周期按完整周期比较。分类可点击查看对应日期范围明细。结余率为结余占收入的比例，无收入时不计算；无支出记录不代表实际未消费。
+- **分类管理**：所有分类统一管理，可重命名和删除，每种收支类型最多 50 个。历史账单和已有分类预算保留原名；重命名同步更新定期任务，删除会暂停引用该分类的任务。
+- **备份恢复**：完整 JSON 复制、校验预览、确认合并；兼容 v0.1 备份，重复导入不会重复入账，相同 ID 保留当前账本版本。已有月份预算、隐私设置不覆盖。
+- **CSV 导出**：复制全部或指定月份账单的 CSV 文本，保存为 UTF-8 `.csv` 后可用 Excel 打开；不支持用 CSV 恢复。
+- **首页金额隐藏**：隐藏首页总额、预算金额和最近账单金额，并记住开关；其他页面仍可查看明细。
+
+## 启动
+
+需要 Node.js 20+ 和 pnpm。使用 `pnpm-lock.yaml` 锁定依赖。
 
 ```powershell
 pnpm install --frozen-lockfile
 if (!(Test-Path -LiteralPath .env.local)) { Copy-Item .env.example .env.local }
-# Set XQ_APP_ID and XQ_CLOUD_ENV in .env.local to your own values.
+# 在 .env.local 填入自己的 XQ_APP_ID 和 XQ_CLOUD_ENV
 pnpm setup:local
 pnpm dev:mp-weixin
 ```
 
-After compilation, import the **repository root** into WeChat Developer Tools and click Compile. Keep the development terminal running. The generated `project.config.json` points to `dist/dev/mp-weixin/`.
+等待编译完成后，在微信开发者工具导入**项目根目录**。`project.config.json` 中 `miniprogramRoot` 指向 `dist/dev/mp-weixin/`；开发期间保持编译终端运行。
 
-Set `XQ_APP_ID` and `XQ_CLOUD_ENV` to your own deployment identifiers in the local, untracked `.env.local` file. Local process environment variables can also supply these values. Keep actual deployment values out of commits, release notes and screenshots. Do not enter an AppSecret in the frontend. `.env.local` and generated deployment files are ignored by Git:
+在本地、未跟踪的 `.env.local` 中填写自己的 `XQ_APP_ID` 和 `XQ_CLOUD_ENV`，也可通过本机进程环境变量提供。不要把实际部署值写入提交、发布说明或公开截图，也不要把 AppSecret 放入前端配置。共享设置修改 `src/manifest.template.json` 和 `project.config.template.json`；修改 manifest 设置后需重新启动开发构建。生成的 `project.config.json`、`src/manifest.json`、`src/config/cloud.local.ts` 和 `cloudfunctions/ledger/local-config.json` 均不提交 Git。
 
-- `project.config.json`
-- `src/manifest.json`
-- `src/config/cloud.local.ts`
-- `cloudfunctions/ledger/local-config.json`
+应用版本统一来自 `package.json` 的 `version`：「我的」显示、生成的 manifest 和桌面安装包均使用该值。更新版本后需重新构建并上传小程序，已有开发目录和手机体验包不会因修改版本文件而自动更新。
 
-Edit shared settings in `project.config.template.json` and `src/manifest.template.json`. Development and build commands generate local configuration automatically. After changing manifest settings, restart the development build.
-
-The application version comes from `package.json` (`version`). The profile page, generated manifest and desktop installer use this value. Rebuild and upload after changing it; existing development output and the phone's trial package do not update merely because the version file changed.
-
-Windows shortcuts are also available:
+Windows 也可使用快捷脚本；它优先使用 PATH 中的 pnpm，再尝试本机 Codex 自带的 pnpm，不改系统环境变量：
 
 ```powershell
 .\dev.ps1
 .\dev.ps1 -Target h5
 ```
 
-The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 supports guest browsing and sample-ledger edits for the current app session, but does not support account sign-in or access to cloud ledgers. A desktop EXE is available as a development build; QR sign-in requires a separately configured HTTPS gateway and real-device acceptance testing before production use.
+H5 预览可用 `pnpm dev:h5`，地址以终端显示为准。微信真机验证仍需在开发者工具完成。
 
-## Checks and builds
+## 检查与构建
 
 ```powershell
 pnpm test
@@ -117,87 +118,160 @@ pnpm build:mp-weixin
 pnpm build:h5
 ```
 
-Production output is written to `dist/build/mp-weixin` and `dist/build/h5`. Do not edit generated files. The mini program build automatically checks that the main package is below 1,500,000 bytes, component injection is enabled with `requiredComponents`, and each image/audio asset is at most 200,000 bytes. WeChat Developer Tools remains the final authority for its upload checks.
+生产产物在 `dist/build/mp-weixin`，构建命令会将根目录配置中的 `miniprogramRoot` 切换到该目录，完成后可直接导入项目根目录编译和预览。再次运行 `pnpm dev:mp-weixin` 会切回 `dist/dev/mp-weixin/`；`setup:local`、类型检查等命令保留当前选择。H5 产物在 `dist/build/h5`。不要直接修改 dist 文件。
 
-The mini program build also sets the root project's `miniprogramRoot` to `dist/build/mp-weixin/`, so the repository root can be imported for preview after a successful build. Running `pnpm dev:mp-weixin` switches it back to `dist/dev/mp-weixin/`. Setup and type checks preserve the selected directory.
+小程序构建会检查主包小于 1,500,000 字节、启用 `requiredComponents` 按需注入、单个图片或音频资源不超过 200,000 字节；最终上传结果仍以开发者工具检查为准。
 
-If the project reports a missing `app.json`, run `pnpm install --frozen-lockfile` followed by `pnpm build:mp-weixin` in the directory containing `package.json`. Confirm that `dist/build/mp-weixin/app.json` exists, then reopen the project and compile. `setup:local` repairs configuration only; it does not generate the mini program. Do not create an empty `app.json` by hand.
+### 提示根目录找不到 app.json
 
-When `XQ_APP_ID` is absent, setup preserves an AppID already entered in the local project. Process environment values take priority over `.env.local`, then the existing AppID; an explicitly empty value selects guest mode. Account access and cloud sync still require your own cloud configuration and deployment.
+小青账本的 `app.json` 由构建命令生成，源码根目录中没有这个文件。首次下载源码后，或本地项目配置缺少 `miniprogramRoot` 时，在含有 `package.json` 的项目根目录执行：
 
-### Sign-in troubleshooting
+```powershell
+pnpm install --frozen-lockfile
+pnpm build:mp-weixin
+```
 
-If sign-in reports that the cloud environment is missing, verify that your local `.env.local` contains the intended `XQ_APP_ID` and `XQ_CLOUD_ENV`. The selected environment must contain the deployed `ledger` cloud function. A preserved AppID alone does not supply a cloud environment, and editing `.env.local` does not update code that has already been compiled.
+等待构建成功，确认 `dist/build/mp-weixin/app.json` 已生成，再重新打开开发者工具中的项目并编译。根目录的 `project.config.json` 应包含 `"miniprogramRoot": "dist/build/mp-weixin/"` 和 `"cloudfunctionRoot": "cloudfunctions/"`。只执行 `setup:local` 会修复配置，不会生成小程序产物；不要手工创建空的 `app.json`。
 
-1. Check the two local values and any overriding process environment variables. Keep them in local configuration; do not paste actual deployment identifiers into public issues or release notes.
-2. Stop the development compiler if it is running, then run `pnpm build:mp-weixin` from the directory containing `package.json`. For ongoing development, restart `pnpm dev:mp-weixin` instead and wait for compilation to finish.
-3. Reopen the repository root in the developer tools and compile. Confirm that `miniprogramRoot` points to the output of the command you just ran: `dist/build/mp-weixin/` for a production build or `dist/dev/mp-weixin/` for development.
-4. If the same missing-environment message remains after a successful rebuild, clear **only the compilation cache** in the developer tools, then compile and try signing in again. A stale compilation cache can retain the earlier bundle with an empty environment value. Preserve application storage and user data; do not use a clear-all-data action to resolve this build issue.
-5. If sign-in still fails, inspect the current error and the `ledger` function logs in the configured environment. Confirm that the project AppID and deployed function configuration match your own deployment. H5 supports guest browsing only and cannot be used to verify account sign-in.
+没有提供 `XQ_APP_ID` 时，配置脚本保留本地项目中已填写的 AppID；优先级为进程环境变量、`.env.local`、已有 AppID。显式空 AppID 值会切换为游客模式。正式账号和云同步仍需要配置自己的云环境并完成部署。
 
-Clearing the compilation cache is separate from clearing the mini program's local storage. Local storage can contain unmigrated legacy records, pending requests and remembered sessions; keep it intact during this procedure.
+### 登录问题排查
 
-### Uploading the trial mini program
+如果登录提示未配置云环境，先确认本地 `.env.local` 中的 `XQ_APP_ID` 和 `XQ_CLOUD_ENV` 正确，所选环境中已有部署的 `ledger` 云函数。保留 AppID 不会自动补齐云环境；修改 `.env.local` 也不会更新已经编译的代码。
 
-Sign in to WeChat Developer Tools and provide the actual CLI path on your machine:
+1. 核对两项本地配置及可能覆盖它们的进程环境变量。实际部署标识只保存在本地配置中，不要粘贴到公开问题或发布说明。
+2. 如有开发编译进程，先停止，再在含 `package.json` 的目录运行 `pnpm build:mp-weixin`。持续开发时则重新启动 `pnpm dev:mp-weixin`，等待编译完成。
+3. 在开发者工具重新打开仓库根目录并编译。确认 `miniprogramRoot` 指向刚生成的目录：生产构建为 `dist/build/mp-weixin/`，开发构建为 `dist/dev/mp-weixin/`。
+4. 若重新构建后仍出现原来的云环境缺失提示，在开发者工具中**仅清理编译缓存**，再编译并尝试登录。旧编译缓存可能仍保留云环境为空的代码包。保留应用存储和用户数据，不要用「清除全部数据」处理这个构建问题。
+5. 若仍无法登录，查看当前错误及对应云环境中的 `ledger` 函数日志，核对项目 AppID 与已部署函数配置是否匹配。H5 仅支持游客浏览，不能用来验证账号登录。
+
+编译缓存与小程序本地存储不同。本地存储可能含尚未迁移的旧账单、待确认请求和登录记录，排查过程中应保留。
+
+### 上传小程序体验版
+
+使用已登录的微信开发者工具，填写本机 CLI 的实际路径：
 
 ```powershell
 pnpm upload:mp-weixin --cli "C:\YOUR_PATH\cli.bat"
-# Rebuild and prepare the upload project without uploading
+# 仅重新构建并准备上传项目，不执行上传
 pnpm upload:mp-weixin --prepare-only
 ```
 
-Every upload runs a fresh production build and package checks, then creates a new project under `work/wechat-release/` and copies `dist/build/mp-weixin` into its `miniprogram/` directory. It takes the upload version from `package.json` and requires both a CLI success result and a fresh receipt. It does not upload the repository root's potentially stale development output. The CLI path can also be set with the `XQ_WECHAT_CLI` environment variable.
+上传命令每次重新生产构建、检查包体质量，并在 `work/wechat-release/` 下创建独立项目，将 `dist/build/mp-weixin` 复制到项目内的 `miniprogram/`。上传版本取自 `package.json`，成功状态需同时通过 CLI 结果与本次新回执校验；不会直接上传根项目指向的旧开发产物。也可通过环境变量 `XQ_WECHAT_CLI` 设置 CLI 路径。
 
-Both upload and `--prepare-only` validate that an AppID and cloud environment have been configured before building the release project. Fill in your own local deployment values first. To check this configuration explicitly, run `node scripts/prepare-local-config.cjs --mp-mode build --require-cloud`. Ordinary development and build commands remain available for guest previews without cloud configuration.
+上传及 `--prepare-only` 均会在构建发布项目前校验 AppID 和云环境；请先填写自己的本地部署值。也可运行 `node scripts/prepare-local-config.cjs --mp-mode build --require-cloud` 显式检查配置。普通开发和构建命令仍允许在未配置云环境时预览游客体验。
 
-After uploading, confirm the version in the mini program console and select that development version as the trial version. Reopen the trial mini program on your phone and check the version on the profile page. GitHub Releases and WeChat trial versions are separate publication channels. Generated upload projects and receipts in `work/` are not committed to Git.
+上传后在小程序管理后台确认版本号，并将对应开发版本设为体验版；重新打开手机体验版，在「我的」核对当前版本。GitHub Release 与微信体验版是两个发布入口，需分别更新。`work/` 中的上传项目和回执不提交到 Git。
 
-Documentation images live in `docs/images/`, outside `src/static/`, and are not included in the mini program package.
+### 快速复查包体质量
 
-## Deploying Cloud Development
+已有构建产物时，可以单独检查主包大小、组件按需注入和图片／音频资源上限，无需重新构建：
 
-1. Create `xq_books`, `xq_entries` and `xq_requests` in your own cloud environment. Set all three to **administrator-only read/write**. Clients access data through cloud functions, not directly.
-2. Run `pnpm build:cloud` to prepare local configuration and generate shared validation code.
-3. Right-click `cloudfunctions/ledger` in WeChat Developer Tools and upload/deploy with dependencies installed in the cloud. Choose your own environment. Include the generated `local-config.json`, or set the cloud function environment variable `XQ_APP_ID`. A missing AppID causes requests to be rejected rather than bypassing identity validation.
-4. Set the function timeout to **20 seconds** and confirm it is active.
-5. Compile and sign in. Check the cloud sync page before relying on another device to retrieve records.
+```powershell
+pnpm check:mp-quality
+# 检查当前开发预览包
+node scripts/check-mp-quality.cjs dist/dev/mp-weixin
+```
 
-For entry pagination, create an ascending compound index on `xq_entries.owner` and `_id` if prompted. Changing the AppID or cloud environment requires updating `.env.local`, rebuilding and redeploying.
+检查失败会返回非零退出码，便于接入 CI。修改源码或配置后应先重新构建，避免误查旧产物；上传结果仍以微信开发者工具的检查为准。
 
-### Background scheduler
+## 浏览体验、登录与用户归属
 
-`cloudfunctions/ledger/config.json` defines a timer named `ledgerRecurring` with the expression `0 */5 * * * * *` (every five minutes).
+首次打开且尚未登录时进入首页，直接浏览示例账本，可体验记账、账单筛选、统计、预算和分类管理。首次游客浏览不会自动请求登录或资料授权；需要正式账本、云同步、群组、定期记账或备份恢复时，由用户主动选择登录。登录页也可返回继续浏览。曾主动登录后，再次打开会验证并恢复同一账号的登录状态。
 
-After deploying the function, right-click **`cloudfunctions/ledger/config.json` → Upload Trigger** in WeChat Developer Tools. Some versions expose the action on the function folder. Verify execution logs in the cloud console; uploading code alone does not confirm that the timer is active. The app displays the most recent background check when available. A manual due-date check is also available for the selected book.
+体验账本仅保存在内存，本次打开期间有效，不读取旧版本地账单或账号缓存，也不会随登录迁入正式账本。登录后切换到当前账号的正式账本；不要求手机号，头像和昵称均为选填。登录使用云函数可信 OPENID/APPID，正式账单归属由服务端计算，客户端不能指定他人的账本。
 
-The entry point checks the trusted runtime source `wx_trigger`; client event fields cannot authorize global scheduler execution. Do not expose the function through an anonymous HTTP endpoint.
+主动登录成功后，专用本地登录记录保存会话凭证、账号标识及到期时间，不包含账单和个人资料。单次服务端会话最长有效 24 小时；再次打开或回到前台会验证身份，过期时自动续期，并确认仍是已登录的同一账号，无需反复点击登录。网络失败时保留登录记录、隐藏账号账单并提供重新连接，不会因临时断网要求重新登录。
 
-Each invocation processes up to 20 due rules and advances their next date after a successful transaction. Concurrent execution and manual checks share the same deduplication markers. Monitor runtime, failures and backlog as usage grows. Suggested recurring-query indexes include `type`, `active`, `nextDate`, and, for scoped checks, `scope`.
+主动退出会移除本机登录记录、清空内存中的账号数据和筛选状态，并回到游客体验；其他设备的会话与云端记录保留。删除小程序本地存储也会移除登录记录，这与清理开发者工具的编译缓存不同。检测到账号身份变化时，清除原账号登录状态和内存数据，等待用户自主登录，不展示或迁移另一账号的数据。登录记录读取或保存失败会显示提示，不修改原有账单。
 
-## Identity, privacy and data safety
+登录会话与幂等回执共用 `xq_requests` 集合，session_ 前缀文档存储归属和到期时间，不存储原始凭证。所有云端账本接口必须同时满足可信账号身份和有效会话校验。请求中的 owner、accountId 不能替代服务端身份。待确认写入仍按环境和账号隔离，退出不删除，重新登录后可恢复确认。已有账单的 owner 算法不变，无需再次迁移云端记录。
 
-- First-time guests can open the home page and try entries, filters, statistics, budgets and categories without automatic sign-in or profile authorization. The sign-in page also offers a return to browsing. Automatic restoration applies only after a previous voluntary sign-in.
-- Trial data exists only in memory for the current app session. It does not read legacy local bills or account caches and is never imported into the personal ledger when signing in. No phone number is required; avatars and nicknames are optional.
-- Trusted OPENID/APPID and a valid session are required for cloud ledger operations. Client-supplied account fields cannot replace server-side identity.
-- A dedicated local login record stores only the session credential, account identifier and expiry, with no bills or profile details. Server sessions last up to 24 hours. Later launches and foreground checks verify the remembered identity and renew expired sessions only for the same account. Temporary network failures retain the login record, hide account data and offer a connection retry.
-- Signing out removes the local login record, clears in-memory account data and filters, and returns to guest browsing without deleting cloud records or other devices' sessions. Deleting the mini program's local storage also removes its remembered login; this differs from clearing the developer tools' compilation cache. An identity change clears the previous account state and requires a new voluntary sign-in. Login-storage failures display an error without modifying existing bills.
-- The app processes account identifiers, voluntarily provided profile details, entries, budgets and group membership. Shared book entries and author details are visible to group members. Open-source licensing does not authorize access to users' data.
-- Avatar uploads accept PNG/JPEG, are compressed by the client and checked by the server, with a size limit of roughly 200 KB. Storage paths are assigned on the server, and temporary display URLs are returned. Old avatar files are retained for historical records. Automated profile/avatar content moderation is not currently included.
-- `xq_books` stores books, profiles, groups and recurring rules. `xq_entries` stores records. `xq_requests` stores sessions, idempotency receipts, invitations and period markers. Do not delete `cycle_` markers: doing so can allow a deleted periodic entry to be recreated.
-- This repository contains no maintainer deployment identifiers. Never commit `.env.local`, AppSecret, access tokens, private keys, account exports or personal screenshots. Never put service credentials in frontend environment variables.
+## 微信云开发
 
-## Backups, migration and limits
+小程序连接环境 `YOUR_CLOUD_ENV`，通过 `ledger` 云函数访问数据库。身份由云函数运行上下文的 OPENID 和 APPID 确定，客户端不能指定他人的账本。账单、预算、分类及金额隐藏设置同步到当前微信账号。
 
-Legacy local data remains under `xiaoqing.ledger.v1`; schema 1/2 is supported. Export a copy first, then explicitly migrate it to the signed-in personal account from the sync page. Migration does not delete the original local data. Confirm successful sync before changing phones.
+部署步骤：
 
-Imports run in batches of up to 20 entries. Retrying skips existing IDs and preserves current budgets/settings; a failure may occur after earlier batches have succeeded. Cross-book imports attribute entries to the importing user and remove recurring-rule associations. Pending requests remain isolated by environment, account and book, and can be retried after reconnecting. Concurrent edits require refreshing and reconfirming instead of overwriting another device's changes. Offline entry creation in account ledgers is not supported.
+1. 在云开发中创建 `xq_books`、`xq_entries`、`xq_requests` 三个集合，权限均设为「仅管理员可读写」。客户端禁止直接读写集合，仅通过云函数访问。
+2. 执行 `pnpm build:cloud`，生成云函数共用的数据校验代码。
+3. 在开发者工具右键 `cloudfunctions/ledger`，选择「上传并部署：云端安装依赖」，目标环境选择上述 ID。
+4. 将 `ledger` 超时设为 **20 秒**，确认状态为 Active。
+5. 编译小程序，在「我的 → 云同步」确认连接成功。换手机后使用同一个微信账号打开同一个小程序，即可加载该账号账本。
 
-Amounts are stored as integer cents. JSON exports include entries, categories and budgets, but not group membership, invitations, recurring rules or profile configuration. Limits: 50,000 entries and 2,000,000 characters per JSON backup. Backups are not encrypted. Cloud storage is not a substitute for independent backups; clearing local storage may discard unmigrated data and pending requests.
+查询使用 `xq_entries` 的 owner 条件与 _id 升序分页。数据量增长或控制台提示缺少索引时，为此集合建立 owner 升序、_id 升序的复合索引。
 
-## Desktop development and deployment
+更换环境或 AppID 请修改未跟踪的 `.env.local` 并运行 `pnpm setup:local`，重新构建并部署云函数。无需填写 AppSecret。
 
-The desktop client uses a separate interface and shares amount calculations, categories, filtering, budgets, statistics, synchronization and conflict handling with the mini program. It supports personal and group books, calendar views, filtered CSV exports, copied entries and recurring rules. Profile editing and complete JSON backup restoration remain in the mini program.
+## 定时触发器部署
+
+`cloudfunctions/ledger/config.json` 包含名为 `ledgerRecurring` 的 timer 配置，cron 为 `0 */5 * * * * *`。上传云函数代码之后，还需在微信开发者工具右键 **`cloudfunctions/ledger/config.json` → 上传触发器**（部分版本在 ledger 文件夹菜单中）。在云开发控制台确认触发器存在且有执行日志，才能保证小程序关闭时自动生成账单。入口严格校验微信注入的 SOURCE 为 wx_trigger，普通客户端无法伪造定时器事件执行全局任务；不要将该函数配置为匿名 HTTP 接口。
+
+任务每次最多处理 20 个到期项目，事务成功后推进 nextDate，积压任务在后续触发继续处理。并发任务和客户端手动补记使用相同的周期标记，写入与预算相关计数保持原子性。大量项目时应监控执行时间、失败日志和积压，并相应扩大处理能力。
+
+继续使用原有三个仅管理员可读写集合：xq_books 保存账本、profile_ 用户资料、group_ 群组和 rule_ 定期项目；xq_entries 保存账单；xq_requests 保存会话、幂等回执、invite_ 邀请和 cycle_ 周期标记。不能随意删除 cycle_ 文档，否则会破坏去重语义。定期查询建议为 xq_books 建立 type、active、nextDate 升序复合索引；按账本校验可再增加 scope 字段。现有个人账本 ID 不变，旧账单保持可读。
+
+头像由客户端压缩后交给已登录云函数上传，仅接受 PNG/JPEG、最大约 200KB；存储路径由服务端按账号生成，返回受限时效的预览地址。更换头像保留旧文件以支持历史账单，不要批量删除 avatars 目录。资料与头像目前不包含自动内容审核，公开发布前应结合使用范围配置必要的审核流程。
+
+## 数据与升级
+
+小青账本小程序与网页 H5 均支持游客浏览和示例账本体验，体验数据仅在本次打开期间保留，不会导入正式账本。正式账本以登录后的云端数据为准；网页 H5 不支持账号登录或云端账本访问。电脑端 EXE 目前提供开发测试版本；扫码登录仍需要单独部署并配置电脑端 HTTPS 网关，完成真机端到端验收后才可正式使用。
+
+旧版数据仍保留在 `xiaoqing.ledger.v1`，支持 schema 1/2。在「我的 → 云同步」先复制旧本地备份，再确认「迁移」到当前微信账号。迁移不会自动执行，也不会删除原本地数据。换手机前必须确认旧记录已经迁移并显示同步成功。
+
+云端导入每批最多 20 笔，相同 ID 跳过，已有预算和隐私设置保留；中断可能已完成部分批次，重新导入会去重。网络不确定时保留待确认请求，恢复连接后用同一请求 ID 确认结果，防止重复入账。并发修改发生冲突时要求同步后重新确认，不覆盖另一台设备的修改。正式账本当前不支持离线新增账单。
+
+金额按整数分保存。JSON 导出包含当前账本的账单、分类与预算，不含群组成员、邀请、定期规则或个人资料配置。跨账本导入将记账人归为当前导入用户，清除定期项目关联，避免冒用他人身份。JSON 备份上限 200 万字符，账单上限 50000 笔，分类每种最多 50 个。云端保存不等于独立备份，建议定期导出 JSON；备份文件未加密，请妥善保管。清除本地存储会移除尚未迁移的旧账本和待确认请求，因此应先完成同步与备份。
+
+## 代码结构
+
+- `src/core/ledger.ts`：金额计算、校验、旧版兼容、预算/分类、备份合并、统计与 CSV。
+- `src/core/insights.ts`：两端共用的范围筛选、排序、预算草稿复制、每日额度和同进度统计；保留现有数据格式。
+- `src/services/ledger.ts`：云端/本地适配、共享状态与导航。
+- `src/components/BillList.vue`：账单列表展示。
+- `src/pages/`：首页、明细/日历、记账、统计、预算、分类、数据备份和我的。
+- `tests/ledger.test.cjs`：数据完整性、金额、预算、分类、升级、备份、日历边界测试。
+- `tests/insights.test.cjs`：组合筛选、金额边界、预算复制隔离、跨年与闰日统计、未来账单排除测试。
+- `tests/ui-features.test.cjs`：两端预算草稿、取消/失败/权限保护、刷新冲突、小程序筛选与统计钻取交互测试；不能替代真机界面验收。
+
+- `src/services/auth.ts`：微信登录、会话校验、页面拦截和退出。
+- `cloudfunctions/ledger/features.js`：群组权限、用户资料、周期算法及定时处理。
+- `tests/features.test.cjs`：群组隔离、共享预算、资料归属、定期去重、并发重试及日历边界。
+- `tests/auth.test.cjs`：登录拦截、退出清理、账号切换及旧请求竞态测试。
+- `src/core/cloud-client.ts`：同步分页、持久化待确认请求及恢复。
+- `cloudfunctions/ledger/`：可信微信身份、事务、并发控制及幂等写入。
+- `tests/cloud.test.cjs`：模拟数据库的隔离、事务回滚、分页、迁移及请求恢复测试；不能替代真实云环境验收。
+
+模板来源：https://github.com/dcloudio/uni-preset-vue/tree/vite-ts
+
+图标 PNG 已提交，无需额外生成。需要修改图标时可在安装 Pillow 的 Python 环境运行 `python scripts/build-icons.py`。
+
+## 开源许可证
+
+本项目原创代码采用 [MIT License](LICENSE)，保留现有版权声明。允许使用、修改、分发和商业使用；分发代码或其重要部分时须保留版权声明和许可文本。软件按现状提供，不作担保。
+
+选择 MIT 是为了保持应用代码的使用和分发条款简洁。Apache License 2.0 包含明确的专利授权及相关终止条款，本项目目前继续沿用 MIT，不因使用 Apache-2.0 依赖而更改原创代码的许可。
+
+第三方依赖仍遵循各自许可证：直接依赖中的 uni-app 相关包使用 Apache-2.0，Vue、vue-i18n 和微信云开发 wx-server-sdk 使用 MIT。分发第三方代码时应保留对应许可证、版权声明及适用的 NOTICE；本项目的 MIT 许可证不替代第三方许可要求，也不授权访问用户账单、头像等个人数据。
+
+## 本地部署配置与公开仓库
+
+首次克隆后执行：
+
+```powershell
+pnpm install --frozen-lockfile
+if (!(Test-Path -LiteralPath .env.local)) { Copy-Item .env.example .env.local }
+# 在 .env.local 填入自己的 XQ_APP_ID 和 XQ_CLOUD_ENV
+pnpm setup:local
+```
+
+`.env.local`、`project.config.json`、`src/manifest.json`、`src/config/cloud.local.ts` 和 `cloudfunctions/ledger/local-config.json` 均为本地文件，不提交 Git。构建及开发命令会自动从本地环境生成配置；共享配置请修改 `project.config.template.json` 和 `src/manifest.template.json`。云函数部署前先执行 `pnpm setup:local`，将生成的云函数本地配置一起部署，或在云函数环境变量中设置 `XQ_APP_ID`。缺少 AppID 时云函数拒绝业务请求，不会跳过身份校验。
+
+AppID 和云环境 ID 是路由标识，不是访问密钥，但公开仓库不包含维护者的实际部署值。不要提交 AppSecret、访问令牌、私钥、云服务密钥、账单导出或包含个人信息的截图；不要将密钥写入任何前端环境变量。历史提交中的信息不会因普通删除提交消失，历史清理与密钥轮换需单独处理。
+
+## 电脑端开发与部署（待验收）
+
+电脑端由 Electron 和独立 Vue 页面构成，复用账本金额、分类、同步与并发校验。打开电脑端后获取一次性小程序码，手机在小程序确认并核对六位数字，电脑获得独立、短期有效的云端会话；关联同一小程序账号和群组账本。电脑端支持组合筛选与 CSV 导出、收支日历、月度/年度统计、总预算与分类预算、预算复用及每日额度、金额加减与复制账单，以及分类、群组、定期项目。新增筛选、预算和统计与小程序使用同一套计算逻辑；资料修改、完整 JSON 备份恢复仍在小程序端操作。
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -207,37 +281,10 @@ pnpm desktop
 pnpm package:desktop
 ```
 
-Desktop development and packaging require Node.js 22.12 or later. Set `XQ_DESKTOP_API_URL` in your local `.env.local` to the HTTPS URL of your separately deployed desktop gateway before packaging. Generated `release/` files and local configuration are not committed. The existing Windows preview is an unsigned test build; the commands above do not mean that a new installer has been published.
+Electron 45 开发与打包需要 Node.js 22.12 或更高版本。桌面窗口的请求只连接 `.env.local` 中 `XQ_DESKTOP_API_URL` 指定的 HTTPS 网关；打包前配置该地址，再重新执行 `pnpm package:desktop`。生成的 `release/` 和本地配置均不提交到 Git。安装包为未签名测试版。
 
-Deploy `ledger` and the separate `desktop-gateway` in the same cloud environment. Expose only `desktop-gateway` through an HTTPS gateway; keep the original `ledger` function off anonymous HTTP endpoints. Configure `XQ_WECHAT_APP_SECRET` only in the gateway's server-side environment, never in `.env.local`, source files, the installer or a chat message. The server must be able to reach the required platform APIs and satisfy their IP allowlist settings.
+部署前需：①在相同云环境部署更新后的 `ledger` 和独立的 `desktop-gateway`；②只为 `desktop-gateway` 创建 HTTPS 网关，禁止将原 `ledger` 云函数暴露为匿名 HTTP；③仅在云函数服务端环境变量配置 `XQ_WECHAT_APP_SECRET`，不要填写到 `.env.local`、仓库、安装包或聊天消息中；④按小程序代码版本设置 `XQ_MINI_ENV` 为 `release`、`trial` 或 `develop`，并确保对应版本已包含 `pages/desktop-login/index`；⑤在网关层配置按来源限流和配额，保护未登录接口免于滥用。云函数另对二维码生成设全局限额（每分钟 30 次、每天 500 次，按 UTC 时间窗口），但全局限额无法代替网关防护，且可能因恶意请求造成其他用户暂时无法获取登录码。服务端需能访问微信接口，且满足微信接口的 IP 白名单等平台配置。
 
-Desktop sign-in obtains a one-time mini program code. Scan it on a phone, compare the six-digit code shown on both devices and explicitly confirm sign-in. The desktop then receives a separate, short-lived session for the same account and books. Set `XQ_MINI_ENV` to `release`, `trial` or `develop`, and ensure that the corresponding mini program version includes `pages/desktop-login/index`.
+将网关 URL 作为 `XQ_DESKTOP_API_URL` 配置在本机 `.env.local` 后构建安装包。AppSecret 只属于服务端，不要发送给他人。完整验收应使用两台真实设备与两个微信账号，验证登录确认、取消/过期/重放、账号和群组隔离、写入去重、网络中断恢复、退出及小程序已有账本兼容。模拟测试不等于真实云端验收。
 
-For trial testing, upload the mini program containing that page, make it available to trial users, set `XQ_MINI_ENV=trial` locally, run `pnpm build:desktop-gateway` and redeploy the gateway. After the mini program is publicly released, switch to `release`, rebuild and redeploy. Server-side environment variables take precedence over generated local configuration. Release codes validate page availability; trial and development codes target their respective code versions.
-
-Configure gateway rate limits and quotas for unauthenticated requests. The function's additional global code-generation limits are 30 requests per minute and 500 per day, using UTC windows; these do not replace gateway protection. Gateway failures return the operation stage and numeric error code rather than raw platform error text or credentials.
-
-Desktop acceptance testing still requires two real devices and two accounts. Check confirmation, cancellation, expiry, replay protection, account and group isolation, duplicate-write prevention, recovery after network interruption, sign-out and compatibility with existing mini program records. Automated tests do not establish complete desktop or production acceptance.
-
-## Project structure
-
-| Path | Purpose |
-| --- | --- |
-| `src/core/ledger.ts` | Amounts, validation, compatibility, categories, budgets, backup merging and summaries |
-| `src/core/cloud-client.ts` | Pagination, pending writes and recovery |
-| `src/services/auth.ts` | Sign-in, session validation and protected navigation |
-| `src/services/ledger.ts` | Shared ledger state, cloud operations and book switching |
-| `src/pages/` | Mini program screens |
-| `src/components/BillList.vue` | Entry and author display |
-| `cloudfunctions/ledger/` | Trusted identity, transactions, group access and recurring processing |
-| `scripts/` | Local configuration, shared-code generation and package checks |
-| `tests/` | Data integrity, cloud isolation, authentication and feature tests |
-| `docs/images/` | Public README screenshots and GIF |
-
-Database tests use a mock and do not replace real-device/cloud acceptance tests. The initial scaffold comes from [uni-preset-vue/vite-ts](https://github.com/dcloudio/uni-preset-vue/tree/vite-ts). Navigation PNGs are committed; regenerate them with `python scripts/build-icons.py` in a Python environment with Pillow installed.
-
-## License
-
-Original project code is licensed under [MIT](LICENSE). Preserve its copyright and license notice when redistributing the software or substantial portions of it. The software is provided without warranty.
-
-Third-party dependencies retain their own licenses: the direct uni-app packages use Apache-2.0; Vue, vue-i18n and wx-server-sdk use MIT. Preserve their applicable notices and license texts when distributing third-party code. The project continues to use MIT for simplicity; Apache-2.0 dependencies do not by themselves require relicensing the original application code. Neither this license nor public source availability grants access to user data.
+电脑扫码联调时，先上传包含 `pages/desktop-login/index` 的小程序代码并设为体验版，在本机 `.env.local` 设置 `XQ_MINI_ENV=trial`，运行 `pnpm build:desktop-gateway` 后重新部署网关。正式发布后改为 `release` 并重新构建部署。若云端已有同名环境变量，它会优先于本地生成的配置。正式版登录码会校验页面存在；开发／体验版按对应版本生成，不依赖正式版中是否已有该页面。网关只返回微信接口错误的阶段与数字错误码，不返回原始错误文本、访问令牌或密钥。

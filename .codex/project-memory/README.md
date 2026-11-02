@@ -1,16 +1,17 @@
-# Xiaoqing Ledger project memory
+# 小青账本项目记忆
 
-This directory belongs only to this repository and travels with Git. Do not read, import or modify the user's global memory.
+本目录仅服务本仓库，随 Git 迁移，不读取、迁入或修改用户全局记忆。
 
-Read in this order: `status.md` → `decisions.md` → `architecture.md` → `workflows.md`. Check source and tests for module-specific work; memory does not replace implementation evidence.
+阅读顺序：[当前状态](status.md) → [产品规则与技术约定](decisions.md) → [架构与数据流](architecture.md) → [开发与发布工作流](workflows.md)。涉及具体模块时回到源代码和测试核实，记忆不能替代实现。
 
-## Maintenance rules
+## 维护规则
 
-- Update the relevant entries after important changes. Replace stale conclusions instead of appending contradictory states.
-- Date important conclusions and cite their evidence. Distinguish **Implemented**, **Tests passed**, **User confirmed**, **Observed** and **Unverified**. Historical documentation does not establish current validation.
-- Keep only public project facts and conventions. Never store real deployment identifiers, secrets, session credentials, ledger records, personal profiles or private absolute paths. Record configuration variable names and repository-relative paths only.
-- Check Git status and protect existing work before editing. Run applicable checks, review the diff and sensitive information, then commit and push to `origin`. Retain the local commit and report network or authentication failures; never force-push.
-- Record conflicts between background information, older documents and implementation in `status.md` before changing behavior. Releases, deployments and history rewriting need authorization for the specific task; existing authorization in the conversation remains valid.
-- Write all new or updated repository-facing prose in English, including this memory, documentation, commit messages and release notes. Application interface copy retains its established language unless a translation is explicitly requested.
+- 重要变更同步修改对应条目，替换过时结论，不重复追加相互矛盾的状态。
+- 每条重要结论注明日期、证据和状态：**代码已实现**、**测试通过**、**用户确认**、**实际观察**、**尚未验证**。文档历史陈述不能视为本轮验证。
+- 仅保存可公开的项目事实和约定；不保存真实部署标识、密钥、会话凭据、账单、个人资料或私人绝对路径。配置只记录变量名及仓库相对位置。
+- 先核对 Git 状态，保护现有修改；修改后运行适用检查，审查差异和敏感信息，再提交并推送 origin。网络或认证失败保留提交并如实说明，不强制推送。
+- 发现背景、旧文档与实现冲突，先在 `status.md` 记录，不凭记忆改变产品行为。部署、发布及历史重写需要对应任务授权；已在会话中获得的授权继续有效。
+- **用户确认（2026-11-02）：仅 Git 提交信息使用英文。** 默认 README、发布标题及说明、其他文档、协作约定和本项目记忆继续使用中文；保留 `README.en.md` 英文译本。不得再次把提交信息的语言要求扩展到其他内容。
+- **发布约定（2026-11-02）**：沿用已有交付格式，先创建草稿，备齐并核验对应版本的 Windows EXE、中文使用说明和 SHA256SUMS，再发布；未经明确范围变更，不得静默改为仅源码发布。已锁定的发布保留历史，补发使用用户确认的新版本。
 
-Established on 2026-10-28 at source baseline `4c8a3d2`. This remains the repository's sole project-memory entry point. On 2026-11-02, the tracked memory files and Git metadata omitted from the transferred Windows workspace were restored from `origin/main` at `b3ee15c70eb3c8d7e53d9cc4a5b2c4763fd7fd03`; see `status.md` for the current work and its validation limits.
+建立日期：2026-10-28，初始源码基线 `4c8a3d2`。沿用本目录作为唯一项目记忆入口。2026-11-02，当前 Windows 工作区缺失的 Git 元数据和五份已跟踪记忆从 `origin/main` 的 `b3ee15c70eb3c8d7e53d9cc4a5b2c4763fd7fd03` 恢复；当前版本、发布记录和验证边界见 `status.md`。
