@@ -45,9 +45,9 @@ The interface is currently in Simplified Chinese; this README provides English s
 
 ---
 
-**Release status: Pre-release.** See the [v1.0.4-r1 release notes](docs/releases/v1.0.4-r1.md) for the retained local configuration/build-directory fixes, sign-in recovery and installation instructions.
+**Release status: Release (Latest).** See the [v1.0.4-r1 release notes](docs/releases/v1.0.4-r1.md) for the retained local configuration/build-directory fixes, sign-in recovery and installation instructions.
 
-The Windows x64 installer, quickstart and SHA-256 checksums are listed with the [v1.0.4-r1 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1). The unsigned preview installer passed its build and static payload checks; actual installation and complete QR sign-in acceptance have not been performed. Trial mini program access requires the corresponding membership. The earlier [v1.0.4 release](docs/releases/v1.0.4.md) contains source only, without a desktop installer.
+The Windows x64 installer, quickstart and SHA-256 checksums are listed with the [v1.0.4-r1 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1). The unsigned installer passed its build and static payload checks; actual installation and complete QR sign-in acceptance have not been performed. Trial mini program access requires the corresponding membership. The earlier [v1.0.4 release](docs/releases/v1.0.4.md) contains source only, without a desktop installer.
 
 During the earlier v1.0.4 checks on 2026-11-02, simulator sign-in displayed the personal account and synchronized cloud status for an empty ledger. Physical-device and multi-account acceptance were not performed. Revision r1 retains the same backend authentication logic and has separate version checks and mini program/desktop builds. Publishing the repository is separate from uploading the mini program, submitting it for review or making it public.
 
@@ -108,7 +108,7 @@ Windows shortcuts are also available:
 .\dev.ps1 -Target h5
 ```
 
-The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 supports guest browsing and sample-ledger edits for the current app session, but does not support account sign-in or access to cloud ledgers. A desktop EXE is available as a development build; QR sign-in requires a separately configured HTTPS gateway and real-device acceptance testing before production use.
+The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 supports guest browsing and sample-ledger edits for the current app session, but does not support account sign-in or access to cloud ledgers. A Windows desktop installer is available; QR sign-in depends on a separately configured HTTPS gateway, and complete real-device acceptance testing remains outstanding.
 
 ## Checks and builds
 
@@ -209,7 +209,7 @@ pnpm desktop
 pnpm package:desktop
 ```
 
-Desktop development and packaging require Node.js 22.12 or later. Set `XQ_DESKTOP_API_URL` in your local `.env.local` to the HTTPS URL of your separately deployed desktop gateway before packaging. Generated `release/` files and local configuration are not committed. The existing Windows preview is an unsigned test build; the commands above do not mean that a new installer has been published.
+Desktop development and packaging require Node.js 22.12 or later. Set `XQ_DESKTOP_API_URL` in your local `.env.local` to the HTTPS URL of your separately deployed desktop gateway before packaging. Generated `release/` files and local configuration are not committed. The Windows installer is unsigned; packaging commands themselves do not publish it.
 
 Deploy `ledger` and the separate `desktop-gateway` in the same cloud environment. Expose only `desktop-gateway` through an HTTPS gateway; keep the original `ledger` function off anonymous HTTP endpoints. Configure `XQ_WECHAT_APP_SECRET` only in the gateway's server-side environment, never in `.env.local`, source files, the installer or a chat message. The server must be able to reach the required platform APIs and satisfy their IP allowlist settings.
 

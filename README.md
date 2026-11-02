@@ -45,9 +45,9 @@
 
 ---
 
-**发布状态：体验测试版（Pre-release）。** 本版保留本地配置与构建目录修复，并补充登录恢复及安装说明；详见 [v1.0.4-r1 发布说明](docs/releases/v1.0.4-r1.md)。
+**发布状态：Release（Latest）。** 本版保留本地配置与构建目录修复，并补充登录恢复及安装说明；详见 [v1.0.4-r1 发布说明](docs/releases/v1.0.4-r1.md)。
 
-Windows x64 安装包、使用说明和 SHA-256 校验文件见 [v1.0.4-r1 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1)。安装包已通过构建与静态内容核对，为未签名体验测试版，使用小程序体验版时需要体验成员权限；尚未完成实际安装及完整扫码验收。此前的 [v1.0.4](docs/releases/v1.0.4.md) 仅提供源码，没有电脑端安装包。
+Windows x64 安装包、使用说明和 SHA-256 校验文件见 [v1.0.4-r1 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1)。安装包已通过构建与静态内容核对，未进行数字签名，使用小程序体验版时需要体验成员权限；尚未完成实际安装及完整扫码验收。此前的 [v1.0.4](docs/releases/v1.0.4.md) 仅提供源码，没有电脑端安装包。
 
 2026-11-02 较早的 v1.0.4 验证在开发者工具模拟器中确认了登录成功，个人账号与云同步状态正常显示，测试账本为空；未进行真机或多账号验收。r1 保留相同的服务端认证逻辑，另行完成版本检查及小程序、电脑端构建。仓库发布与小程序上传、提交审核及上线相互独立。
 
@@ -215,7 +215,7 @@ node scripts/check-mp-quality.cjs dist/dev/mp-weixin
 
 ## 数据与升级
 
-小青账本小程序与网页 H5 均支持游客浏览和示例账本体验，体验数据仅在本次打开期间保留，不会导入正式账本。正式账本以登录后的云端数据为准；网页 H5 不支持账号登录或云端账本访问。电脑端 EXE 目前提供开发测试版本；扫码登录仍需要单独部署并配置电脑端 HTTPS 网关，完成真机端到端验收后才可正式使用。
+小青账本小程序与网页 H5 均支持游客浏览和示例账本体验，体验数据仅在本次打开期间保留，不会导入正式账本。正式账本以登录后的云端数据为准；网页 H5 不支持账号登录或云端账本访问。电脑端提供 Windows 安装程序，扫码登录依赖单独部署并配置的 HTTPS 网关；完整真机端到端验收仍需完成。
 
 旧版数据仍保留在 `xiaoqing.ledger.v1`，支持 schema 1/2。在「我的 → 云同步」先复制旧本地备份，再确认「迁移」到当前微信账号。迁移不会自动执行，也不会删除原本地数据。换手机前必须确认旧记录已经迁移并显示同步成功。
 
@@ -281,7 +281,7 @@ pnpm desktop
 pnpm package:desktop
 ```
 
-Electron 45 开发与打包需要 Node.js 22.12 或更高版本。桌面窗口的请求只连接 `.env.local` 中 `XQ_DESKTOP_API_URL` 指定的 HTTPS 网关；打包前配置该地址，再重新执行 `pnpm package:desktop`。生成的 `release/` 和本地配置均不提交到 Git。安装包为未签名测试版。
+Electron 45 开发与打包需要 Node.js 22.12 或更高版本。桌面窗口的请求只连接 `.env.local` 中 `XQ_DESKTOP_API_URL` 指定的 HTTPS 网关；打包前配置该地址，再重新执行 `pnpm package:desktop`。生成的 `release/` 和本地配置均不提交到 Git。安装包未进行数字签名。
 
 部署前需：①在相同云环境部署更新后的 `ledger` 和独立的 `desktop-gateway`；②只为 `desktop-gateway` 创建 HTTPS 网关，禁止将原 `ledger` 云函数暴露为匿名 HTTP；③仅在云函数服务端环境变量配置 `XQ_WECHAT_APP_SECRET`，不要填写到 `.env.local`、仓库、安装包或聊天消息中；④按小程序代码版本设置 `XQ_MINI_ENV` 为 `release`、`trial` 或 `develop`，并确保对应版本已包含 `pages/desktop-login/index`；⑤在网关层配置按来源限流和配额，保护未登录接口免于滥用。云函数另对二维码生成设全局限额（每分钟 30 次、每天 500 次，按 UTC 时间窗口），但全局限额无法代替网关防护，且可能因恶意请求造成其他用户暂时无法获取登录码。服务端需能访问微信接口，且满足微信接口的 IP 白名单等平台配置。
 
