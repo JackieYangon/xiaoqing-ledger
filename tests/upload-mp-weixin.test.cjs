@@ -20,6 +20,41 @@ try {
   const asset = Buffer.from([0, 1, 2, 0xff, 0x80, 0x7f])
   fs.writeFileSync(path.join(productionDir, 'asset.png'), asset)
   const calls = []
+  const strictConfigArgs = ['scripts/prepare-local-config.cjs', '--mp-mode', 'build', '--require-cloud']
+  const uploadBase = path.join(root, 'work/wechat-release')
+  const originalFiles = new Map([
+    ['project.config.json', fs.readFileSync(path.join(root, 'project.config.json'), 'utf8')],
+    ['src/manifest.json', 'existing manifest'],
+    ['src/config/cloud.local.ts', 'existing cloud configuration'],
+    ['cloudfunctions/ledger/local-config.json', 'existing cloud function configuration'],
+    ['dist/build/mp-weixin/pages/about/index.js', 'current version'],
+  ])
+  for (const [file, contents] of originalFiles) {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
+    fs.writeFileSync(path.join(root, file), contents)
+  }
+  fs.writeFileSync(path.join(root, '.env.local'), 'XQ_CLOUD_ENV=\n')
+  const prepareScript = path.resolve(__dirname, '../scripts/prepare-local-config.cjs')
+  for (const prepareOnly of [false, true]) {
+    calls.length = 0
+    assert.throws(() => prepareAndUpload({ root, cli, prepareOnly }, (command, args, options) => {
+      calls.push(args)
+      assert.deepEqual(args, strictConfigArgs, 'configuration must be checked before the build or upload')
+      const result = cp.spawnSync(command, [prepareScript, ...args.slice(1)], {
+        cwd: options.cwd,
+        env: { ...options.env, XQ_APP_ID: 'wx0000000000000000', XQ_CLOUD_ENV: '' },
+        encoding: 'utf8', windowsHide: true,
+      })
+      if (result.error) throw result.error
+      assert.notEqual(result.status, 0, 'missing cloud configuration must fail the real preflight')
+      throw Error(result.stderr)
+    }), /XQ_CLOUD_ENV is required/)
+    assert.deepEqual(calls, [strictConfigArgs], 'failed preflight must prevent build, quality checks, and upload')
+    assert.equal(fs.existsSync(uploadBase), false, 'failed preflight must not create an upload directory')
+    for (const [file, contents] of originalFiles)
+      assert.equal(fs.readFileSync(path.join(root, file), 'utf8'), contents, `failed preflight preserves ${file}`)
+  }
+  calls.length = 0
   const execute = (command, args, options) => {
     calls.push(args)
     if (command === cli) {
@@ -37,7 +72,7 @@ try {
   const result = prepareAndUpload({ root, cli }, execute)
   assert.equal(result.uploaded, true)
   assert.deepEqual(calls.slice(0, 3), [
-    ['scripts/prepare-local-config.cjs'],
+    strictConfigArgs,
     ['node_modules/@dcloudio/vite-plugin-uni/bin/uni.js', 'build', '-p', 'mp-weixin'],
     ['scripts/check-mp-quality.cjs'],
   ])
@@ -88,7 +123,7 @@ try {
   fs.writeFileSync(path.join(productionDir, 'pages/about/index.js'), 'current version')
   fs.unlinkSync(path.join(productionDir, 'app.json'))
   assert.throws(() => prepareAndUpload({ root, cli }, execute), /did not produce app.json/)
-  console.log('PASS mini-program upload: mandatory rebuild, verified byte copies, fresh production project, confirmed receipt, safe batch arguments')
+  console.log('PASS mini-program upload: deployment preflight, mandatory rebuild, verified byte copies, fresh production project, confirmed receipt, safe batch arguments')
 } finally {
   assert.equal(path.dirname(root), path.resolve(os.tmpdir()))
   assert.ok(path.basename(root).startsWith('xiaoqing-upload-'))

@@ -1,40 +1,43 @@
-# 架构与数据流
+# Architecture and data flow
 
-核对日期：2026-10-28。以下为**代码已实现**，证据为列出的源码；不表示线上部署或真机通过。
+Reviewed: 2026-11-02. Statements below describe **Implemented** code and cite source files; they do not establish deployment, physical-device acceptance or successful current automated checks. Core architecture was first documented on 2026-10-28; v1.0.4 changes concern local configuration and release preparation.
 
-## 客户端与入口
+## Clients and entry points
 
-- 小程序：Vue 3、TypeScript、uni-app；`src/main.ts`、`src/App.vue` 启动及前台恢复认证，`src/pages.json` 声明页面和四个底部导航项。`src/pages/` 提供记账、明细、预算、统计、群组、资料、定期任务、备份及桌面登录确认。
-- `src/core/ledger.ts` 负责整数分金额、schema 1/2 兼容、校验、分类、预算、备份合并；`src/core/insights.ts` 负责两端筛选、排序、预算复制及同进度统计。
-- `src/services/ledger.ts` 维护当前账号/账本状态、读写和切换；`src/core/cloud-client.ts` 处理 revision 分页、幂等请求、待确认写入及恢复。待确认存储键按环境、账号、群组隔离，退出不直接删除未确认写入。
-- `src/services/guest-ledger.ts` 通过内存读写适配器构造示例账本，不访问旧数据，不随登录迁入正式账本。H5 为游客体验，条件编译禁用微信云端登录。
-- 桌面：`desktop/ui/main.js` → `App.vue`，Vue 界面复用上述核心；`desktop/main.cjs` 创建 Electron 窗口及 HTTPS 请求，`preload.cjs` 仅暴露受限 IPC 接口。启用 contextIsolation/sandbox，关闭 nodeIntegration，拦截新窗口及导航。会话 token 在界面内存中；待确认请求使用 localStorage。
+- Mini program: Vue 3, TypeScript and uni-app. `src/main.ts` and `src/App.vue` handle startup and foreground authentication restoration. `src/pages.json` declares screens and four bottom navigation entries. `src/pages/` covers entries, records, budgets, statistics, groups, profile, recurring rules, backup and desktop confirmation.
+- `src/core/ledger.ts` implements integer-cent amounts, schema 1/2 compatibility, validation, categories, budgets, backup merging and statistics. `src/core/insights.ts` supplies shared filtering, sorting, budget-copy drafts and corresponding-period comparisons.
+- `src/services/ledger.ts` maintains current account/book state, operations and switching. `src/core/cloud-client.ts` handles revision pagination, idempotent requests, pending writes and recovery. Pending storage is isolated by environment/account/book and is not simply deleted on sign-out.
+- `src/services/guest-ledger.ts` builds an in-memory sample ledger without reading legacy data or importing trial entries during sign-in. H5 offers guest browsing; conditional compilation disables cloud account sign-in there.
+- Desktop: `desktop/ui/main.js` loads `App.vue` and reuses the shared core. `desktop/main.cjs` creates the Electron window and HTTPS transport; `preload.cjs` exposes restricted IPC. Context isolation and sandboxing are enabled, Node integration is disabled, and new-window/navigation requests are restricted. Session tokens remain in interface memory; pending writes use localStorage.
 
-## 认证和正式账本
+## Authentication and account ledgers
 
-1. 小程序主动登录经 `cloud-transport.ts` 调用 `ledger`；`handler.js` 校验可信上下文 APPID/OPENID，计算账号归属，不信任客户端 owner。
-2. 服务端建立最长 24 小时会话，仅存凭据散列；业务操作再次校验账号与会话。`auth.ts` 专用本地登录记录只含会话、账号及到期时间，冷启动/前台验证，过期续期必须保持同一账号。网络失败隐藏账号数据并保留登录记录；身份变化清除原账号状态。
-3. 桌面生成随机凭据，仅发送散列申请二维码；二维码包含公开 scene。小程序已登录用户核对六位数字并确认，`desktop-auth.js` 事务创建归属于该用户的 desktop_session。配对 2 分钟、会话 24 小时；取消、过期和重复确认受校验。
-4. `desktop-gateway/index.js` 只接收限定 POST 操作，验证桌面会话后传给共享 handler，访问同一账号和群组账本。网关是独立 HTTP 入口，不能把原 ledger 暴露为匿名 HTTP。
+1. Voluntary mini program sign-in calls `ledger` through `src/services/cloud-transport.ts`. The handler verifies trusted runtime APPID/OPENID and derives account ownership rather than trusting a client-supplied owner.
+2. The server creates sessions lasting up to 24 hours, storing credential hashes. Account and session checks protect business operations. `src/services/auth.ts` keeps a dedicated local record containing credential, account and expiry. Startup/foreground checks renew only the same account; temporary network failure hides account data while retaining the record. Identity changes clear the previous account state.
+3. Desktop pairing generates a random credential and submits only its hash to request a code. The code contains a public scene. A signed-in mini program user compares the six-digit value and confirms. `desktop-auth.js` creates the account's desktop session transactionally. Pairing lasts two minutes and sessions 24 hours; cancellation, expiry and repeated confirmation are checked.
+4. `cloudfunctions/desktop-gateway/index.js` accepts a limited set of POST operations, validates the desktop session and invokes the shared handler for the same account and group books. It is a separate HTTP entry point; the original `ledger` function must not be exposed anonymously over HTTP.
 
-证据：`src/services/auth.ts`、`src/services/cloud-transport.ts`、`desktop/{main,preload}.cjs`、`desktop/ui/App.vue`、`cloudfunctions/ledger/{index,handler,desktop-auth}.js`、`cloudfunctions/desktop-gateway/index.js`。
+Evidence: `src/services/auth.ts`, `src/services/cloud-transport.ts`, `desktop/main.cjs`, `desktop/preload.cjs`, `desktop/ui/App.vue`, and the ledger/gateway entry points, handler and desktop-auth modules.
 
-## 云端与数据安全
+## Cloud and data safety
 
-- `xq_books`：账本设置、资料、群组及定期规则；`xq_entries`：账单；`xq_requests`：会话、幂等回执、邀请、配对及 cycle_ 周期标记。集合管理员权限是部署要求，本轮未查询线上权限。
-- 群组成员资格在读取及事务内重新验证；群主管理预算、分类及导入，成员仅可修改/删除自己的普通账单。自动定期账单允许关联同项目的手动记录更新，需保留该例外语义。
-- 写入使用请求指纹和回执去重，校验账本 revision 与记录 version；事务同时更新账单、计数和设置。不确定结果保留待确认请求，冲突要求刷新后重新确认。
-- `features.js` 按北京时间计算周/月周期，`cycleId(scope, ruleId, period)` 保证关联唯一；每次调度处理最多 20 个到期规则。入口仅接受可信 SOURCE=wx_trigger 且匹配 timer 名称的全局任务。
+- `xq_books` contains books, profiles, groups and recurring rules; `xq_entries` stores entries; `xq_requests` contains sessions, idempotency receipts, invitations, pairing and `cycle_` markers. Administrator-only collection permissions are a deployment requirement, not a conclusion from local source inspection.
+- Group membership is rechecked when reading and within transactions. Creators manage budgets, categories and imports; members edit/delete their own ordinary entries. A manual entry associated with an automatic periodic record has its documented update exception; preserve that behavior.
+- Request fingerprints/receipts prevent duplicate writes. Book revisions and entry versions protect concurrent edits; transactions update entries, counters and settings together. Uncertain results preserve pending requests and conflicts require a refresh and confirmation.
+- Features use Beijing time for cycle calculations. `cycleId(scope, ruleId, period)` identifies each associated occurrence; each scheduler invocation handles at most 20 due rules. Global scheduled work requires trusted `SOURCE=wx_trigger` and the expected timer name.
 
-证据：`cloudfunctions/ledger/{handler,features,index}.js`、`src/core/cloud-client.ts`、`tests/{cloud,features,desktop-auth}.test.cjs`。
+Evidence: `cloudfunctions/ledger/handler.js`, `features.js`, `index.js`, `src/core/cloud-client.ts`, and cloud/features/desktop-auth tests.
 
-## 配置及生成链
+## Configuration and generation chain
 
-- 版本唯一来源为根 `package.json.version`（当前 1.0.3）。`src/config/version.ts` 用于界面；`prepare-local-config.cjs` 生成 manifest 版本名称/数字版本。云函数子包版本是独立包元数据，不代表产品版本。
-- `.env.local` 或进程变量配置 XQ_APP_ID、XQ_CLOUD_ENV；环境变量优先。模板为 `src/manifest.template.json`、`project.config.template.json`。生成 `src/manifest.json`、`project.config.json`、`src/config/cloud.local.ts`、`cloudfunctions/ledger/local-config.json`，均忽略提交。缺配置可生成空值以编译，不能访问正式云端。
-- `build-cloud.cjs` 将 `src/core/ledger.ts` 转译为**已跟踪**的 `cloudfunctions/ledger/core.cjs`；不要直接编辑生成副本。`build:cloud` 先生成配置，`test` 先生成共享核心。
-- `build-desktop-gateway.cjs` 生成配置及共享核心后，将 handler.js、features.js、core.cjs、desktop-auth.js、local-config.json **平铺**复制到网关根目录，全部忽略提交；不要恢复嵌套 ledger 目录。二维码模式优先级：云端环境变量 → 生成配置 → release。
-- `prepare-desktop.cjs` 从 XQ_DESKTOP_API_URL 生成 `desktop/config.local.json`；只允许无凭据 HTTPS 地址。XQ_WECHAT_APP_SECRET 只能放云函数服务端环境变量。
-- `dist/`、`release/`、`work/`、node_modules 和本地配置被忽略；`outputs/` 已跟踪且非忽略目录，不能作为默认私人工作区。
+- Root `package.json.version` is the sole application version source, currently 1.0.4. `src/config/version.ts` exposes it to the interface. `scripts/prepare-local-config.cjs` generates manifest version name/code. Cloud package versions are independent package metadata.
+- The configuration script accepts `--mp-mode dev|build` and `--require-cloud`. Development/production package scripts pass their respective mode. With no mode, a known existing `dist/dev/mp-weixin/` or `dist/build/mp-weixin/` target is preserved; otherwise the template supplies the default.
+- AppID precedence is process `XQ_APP_ID`, `.env.local` `XQ_APP_ID`, then an existing local project AppID. Explicit empty replacements select guest mode; `touristappid` is treated as no account AppID. `XQ_CLOUD_ENV` comes from the local process environment or `.env.local`; an AppID alone does not supply the cloud environment.
+- Templates are `src/manifest.template.json` and `project.config.template.json`. Generated `src/manifest.json`, `project.config.json`, `src/config/cloud.local.ts` and `cloudfunctions/ledger/local-config.json` remain ignored. Inputs are parsed/validated before writes, and unchanged generated content is not rewritten. Ordinary preview builds allow missing deployment values.
+- Upload preparation invokes `--mp-mode build --require-cloud`, including `--prepare-only`. A missing AppID or cloud environment fails before generation/build/upload-project creation. Every upload rebuilds production output, checks package quality and copies files to a fresh ignored `work/wechat-release/` project with `miniprogramRoot=miniprogram/`. Successful upload requires CLI confirmation and a fresh receipt; prepare-only does not upload.
+- `scripts/build-cloud.cjs` transpiles `src/core/ledger.ts` into the tracked generated `cloudfunctions/ledger/core.cjs`. Do not edit that copy directly. `build:cloud` prepares configuration first; `test` regenerates the shared core first.
+- `scripts/build-desktop-gateway.cjs` generates configuration/core and copies handler, features, core, desktop-auth and local-config files flat into the gateway root. Those copies are ignored; do not restore a nested ledger folder. Code-version precedence is server environment, generated configuration, then `release`.
+- `scripts/prepare-desktop.cjs` generates `desktop/config.local.json` from `XQ_DESKTOP_API_URL`, allowing only HTTPS URLs without embedded credentials. `XQ_WECHAT_APP_SECRET` belongs only in the gateway's server-side environment.
+- `dist/`, `release/`, `work/`, `node_modules/` and local deployment configuration are ignored. `outputs/` is tracked and must not serve as a default private scratch directory.
 
-证据：`package.json`、`.env.example`、`.gitignore`、`scripts/prepare-*.cjs`、`scripts/build-*.cjs`。
+Evidence: package scripts, `.env.example`, `.gitignore`, configuration/build/upload scripts and regression tests. See `status.md` for actual check outcomes and `workflows.md` for platform-specific operation.

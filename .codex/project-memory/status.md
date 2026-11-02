@@ -1,39 +1,49 @@
-# 当前状态与迁移记录
+# Current status and migration record
 
-核对日期：2026-10-28；初始工作树干净，分支 main，源码基线 `4c8a3d2`；origin 为本项目仓库 `git@github.com:JackieYangon/xiaoqing-ledger.git`。本轮仅新增项目记忆并更新 AGENTS.md，不修改业务实现、不升级依赖、不部署云函数或发布版本。
+Updated: 2026-11-02. The active environment is Windows with PowerShell. Git metadata and the five tracked project-memory files were missing from the transferred workspace; they were restored from `origin/main` at `b3ee15c70eb3c8d7e53d9cc4a5b2c4763fd7fd03`. Use the current Git working tree rather than a historical machine-specific checkout path.
 
-## 版本与背景差异
+## Current v1.0.4 work
 
-| 状态 | 事实及证据 |
+| Status and date | Fact and evidence |
 | --- | --- |
-| 代码已实现 | 根 package.json、双语 README 及本地标签包含 1.0.3，产品当前源码版本为 1.0.3；不同于背景 v1.0.1。LICENSE 为 MIT。 |
-| 尚未验证 | docs/releases/v1.0.3.md 记载 Windows 体验测试版及历史构建结果；本轮未核验远程 Release 附件、小程序线上版本或安装包。标签存在不等于发布验收。 |
-| 代码已实现 / 差异 | `4c8a3d2` 已在 v1.0.3 版本号基础上加入游客内存体验和持久登录，见 auth.ts、guest-ledger.ts、auth-persistence 测试；与“所有业务必须登录”背景冲突，详见 decisions.md，暂不改行为。 |
-| 代码已实现 / 差异 | outputs/开始使用.md 含“冷启动需重新登录”“H5 仅登录提示”“未实现电脑端”“已有记录分类不能删除”等旧说法，且与其验收清单冲突；后续不能以此为当前事实，本轮保留原文。 |
-| 用户确认 | 用户在本次接手说明中确认此前微信扫码成功；只代表此前扫码路径，不代表当前 Ubuntu、完整跨端同步、群组和异常场景验收。 |
+| User confirmed, 2026-11-02 | Future Git/GitHub and repository-facing content must be in English. The user authorized committing, pushing and publishing the v1.0.4 repository release, including updated documentation for the sign-in fix. This authorization is separate from mini program review, cloud deployment and desktop installer publication. |
+| Implemented, 2026-11-02 | `package.json.version` is 1.0.4. The app's version display and generated manifest continue to use that single source. Evidence: `package.json`, `src/config/version.ts`, `scripts/prepare-local-config.cjs`. |
+| Implemented, 2026-11-02 | Development and production scripts pass `--mp-mode dev` or `--mp-mode build`; generated `miniprogramRoot` points to the corresponding `dist` output. Ordinary setup preserves an existing known development/production target. Evidence: package scripts and configuration generator. |
+| Implemented, 2026-11-02 | Missing environment replacements no longer erase an AppID already entered in the local project. Explicit empty AppID values still select guest mode. Configuration arguments, identifiers and JSON inputs are checked before generated files are written. Evidence: `scripts/prepare-local-config.cjs`, `tests/version.test.cjs`. |
+| Implemented, 2026-11-02 | Upload preparation, including `--prepare-only`, invokes `--mp-mode build --require-cloud` and fails before building or creating an upload project when AppID or cloud environment is missing. Ordinary guest-preview builds remain available. Evidence: configuration/upload scripts and their regression tests. |
+| Observed, 2026-11-02 | After rebuilding and clearing only the developer tools' compilation cache, simulator sign-in displayed the personal account, synchronized cloud status and a recent synchronization timestamp. The tested ledger had zero entries. This was a simulator observation, not a physical-device or multi-account test. |
+| Implemented, 2026-11-02 | Both READMEs and the new v1.0.4 notes are in English. Troubleshooting distinguishes compilation-cache cleanup from deletion of application storage and user data. `AGENTS.md` uses a portable root and preserves project-memory, data-safety and commit/push rules. |
+| Tests passed, 2026-11-02 | Documentation checks found matching README copies, English text in the modified public documents and existing repository-relative link targets. Evidence: the documentation check output in this task. |
+| Tests passed, 2026-11-02 | All 11 `pnpm test` entry points and `pnpm type-check` passed for the current change. Cloud and upload services are mocked. Evidence: completed command output and exit status in this task. |
+| Tests passed, 2026-11-02 | Production mini program build and quality gates passed: main package 300966 bytes, `requiredComponents`, nine media assets with a largest size of 51787 bytes. Generated output matches application 1.0.4, manifest code 10004, root `dist/build/mp-weixin/` and 14 pages; a nonempty cloud environment was included without logging identifiers. Evidence: completed build and output checks. |
+| Pending at commit time, 2026-11-02 | Commit, push and publication of the v1.0.4 preview source release are authorized but not yet recorded as complete in this memory. Verify publication through the remote tag/release rather than interpreting this pre-publication record as a completion claim. No new desktop installer, mini program review submission or cloud deployment is included. |
 
-## 本轮验证
+The sign-in recovery concerns local deployment configuration and stale compiled code; it does not establish a backend authentication defect or backend fix. No data-format or existing-ledger migration is introduced.
 
-以下均在 2026-10-28 执行，证据为对应命令退出码及输出：
+## Historical checks: Ubuntu, 2026-10-28
 
-| 状态 | 检查及结果 |
+These results were recorded at source baseline `4c8a3d2` on Ubuntu 22.04.5 LTS x86_64. They are historical evidence and do not validate the current Windows checkout or v1.0.4 revision.
+
+| Historical status | Check and result |
 | --- | --- |
-| 测试通过 | 临时 Node.js 22.16.0 + pnpm 10.20.0；`pnpm install --frozen-lockfile`（临时 store）成功，952 包；package.json、锁文件无修改。 |
-| 测试通过 | `pnpm test` 全部 11 个测试入口通过；数据库、页面和上传服务使用模拟，非线上或真机测试。 |
-| 测试通过 | `pnpm type-check`。 |
-| 测试通过 | `CI=1 pnpm build:mp-weixin`：主包 300529 字节，requiredComponents，9 个媒体资源最大 51787 字节，三项门槛通过。空部署配置编译结果，不代表可登录的部署包。 |
-| 测试通过 | `CI=1 pnpm build:h5`、`pnpm build:desktop-ui`、`pnpm build:desktop-gateway`；共享生成核心无差异，网关根目录文件一致。 |
-| 测试通过 | 已跟踪 10 个 JSON 可解析；`git check-ignore` 验证本地配置、dist/release/work 被忽略。 |
-| 尚未验证 | Electron GUI：运行文件 45.0.0 已下载，清除 ELECTRON_RUN_AS_NODE 后因沙箱权限失败，无图形显示变量。不能把 Node 模式版本输出当 Electron 启动成功。 |
-| 尚未验证 | Windows exe 打包：PATH 无 wine、makensis；没有运行 package:desktop，没有修改发布流程。 |
+| Tests passed | Temporary Node.js 22.16.0 and pnpm 10.20.0; frozen-lockfile installation using a temporary store succeeded with 952 packages and no dependency-version changes. |
+| Tests passed | All 11 `pnpm test` entry points and `pnpm type-check` passed. Database, page and upload services were mocked. |
+| Tests passed | `CI=1 pnpm build:mp-weixin`: main package 300529 bytes, `requiredComponents`, nine media assets with a largest size of 51787 bytes. This build used empty deployment settings and did not verify sign-in. |
+| Tests passed | H5, desktop UI and desktop gateway builds passed. Generated shared core had no unexpected diff; flat gateway copies were consistent. Ten tracked JSON files parsed and generated/local files were confirmed ignored. |
+| Unverified | Electron GUI could not launch in the restricted headless session. Node-mode version output was not treated as an Electron launch. Windows installer packaging was not attempted; the required packaging tools were not found. |
 
-构建出现现有循环依赖警告及 Vite CJS API 弃用提示，不影响本轮构建通过。普通沙箱构建初次因更新检查调用网卡接口失败，改用依赖支持的 CI=1 后通过；没有修改依赖源码。
+Existing circular-dependency and Vite CJS warnings did not prevent those historical builds. `CI=1` bypassed the dependency's update check after restricted network-interface enumeration failed; dependency source was not modified.
 
-## 配置与环境待办
+## Historical background discrepancies
 
-- **尚未验证（2026-10-28）**：初检 `.env.local`、所有生成配置均缺失，XQ_APP_ID / XQ_CLOUD_ENV / XQ_DESKTOP_API_URL / XQ_MINI_ENV 未设置。验证后仅生成空部署配置及默认 release 网关配置；没有真实配置迁入。需要联调时在忽略的 `.env.local` 安全补齐，详见 workflows.md。
-- **代码已实现（2026-10-28）**：示例及网关默认模式是 release；历史发布说明记载 trial。当前线上环境变量不可见，不判断线上扫码模式。
-- **尚未验证（2026-10-28）**：云端集合权限、索引、20 秒超时、网关限流、触发器部署及执行日志均未查询。config.json 的 timer 定义不能证明任务正在执行。
-- **尚未验证（2026-10-28）**：双账号、双设备双向同步、群组权限真机交互、网络断开恢复、扫码取消/过期/重放真机路径、图标显示、Windows 安装卸载及新增页面实际体验。
-- **待办（2026-10-28）**：系统仍缺持久 Node/pnpm 工具链，本轮使用临时目录工具；后续开发先确认 PATH，桌面依赖要求 Node >=22.12（依据 electron 包 engines）。不沿用仅 Node 20 的一般前端说明覆盖桌面要求。
-- **待办（2026-10-28）**：后续涉及登录边界时确认游客差异；按需修订 outputs 旧指南。现阶段不重构、不部署、不建立第二套记忆。
+- **Implemented / discrepancy, recorded 2026-10-28:** baseline `4c8a3d2` already supported guest browsing and in-memory sample-ledger edits, unlike earlier background stating that every business feature required login. Formal cloud-ledger access still required authentication. This release preserves that boundary.
+- **Implemented / discrepancy, recorded 2026-10-28:** older files under `outputs/` contain superseded claims about cold-start sign-in, H5, desktop availability and category deletion. Verify current source before relying on those instructions; this task does not treat old statements as current behavior.
+- **Historical documentation only:** v1.0.3 notes describe a Windows preview installer and prior build results. They do not prove current remote release assets, online mini program version, physical-device behavior or installer compatibility.
+- **User confirmed historically:** the earlier handover reported successful desktop code scanning. That statement did not establish Ubuntu GUI support, complete synchronization or current v1.0.4 desktop acceptance.
+
+## Remaining verification boundaries
+
+- Actual deployment values stay in ignored local configuration and must never appear in public memory. The observed simulator login does not verify all collection permissions, indexes, timeout settings, gateway limits or scheduler logs.
+- A timer definition in `cloudfunctions/ledger/config.json` does not prove that a trigger has been deployed and is running.
+- Physical-device sign-in, two-account/two-device synchronization, group interactions, interruption recovery, desktop cancellation/expiry/replay and Windows installation/uninstallation remain separate acceptance work.
+- Discover the active toolchain for each environment. Desktop development requires Node.js 22.12 or later; the general mini program Node.js 20+ guidance does not override that requirement.

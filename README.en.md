@@ -1,9 +1,9 @@
 <p align="center"><img src="src/static/avatar.png" width="88" height="88" alt="Xiaoqing Ledger logo" /></p>
 <h1 align="center">Xiaoqing Ledger</h1>
 <p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
-<p align="center"><a href="README.md">简体中文</a> · <b>English</b></p>
+<p align="center">English documentation · <a href="docs/releases/v1.0.4.md">v1.0.4 release notes</a></p>
 <p align="center">
-  <a href="#features"><img src="https://img.shields.io/badge/version-1.0.3-237859?style=flat-square" alt="Version 1.0.3" /></a>
+  <a href="#whats-new-in-v104"><img src="https://img.shields.io/badge/version-1.0.4-237859?style=flat-square" alt="Version 1.0.4" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
@@ -11,7 +11,7 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
 <p align="center"><a href="#screenshots">Screenshots</a> · <a href="#demo">Live demo GIF</a> · <a href="#features">Features</a> · <a href="#getting-started">Getting started</a> · <a href="#deploying-cloud-development">Cloud deployment</a></p>
-<p align="center">Version 1.0.3 · Cross-platform filtering · Budget reuse · Period comparisons</p>
+<p align="center">Version 1.0.4 · Local setup fixes · Correct build paths · Sign-in recovery</p>
 
 <a name="screenshots"></a>
 <h2 align="center">A look inside</h2>
@@ -45,7 +45,17 @@ The interface is currently in Simplified Chinese; this README provides English s
 
 ---
 
-Download the Windows preview from the [v1.0.3 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.3). Desktop v1.0.3 remains a pre-release, uses the trial mini program and requires WeChat trial access. See the [release notes](docs/releases/v1.0.3.md).
+**Release status: Preview source release.** See the [v1.0.4 release notes](docs/releases/v1.0.4.md) for the local configuration, build-directory and sign-in recovery fixes.
+
+The Windows preview remains available from the [v1.0.3 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.3). Desktop v1.0.3 is a pre-release, uses the trial mini program and requires WeChat trial access. This source release does not include a new v1.0.4 desktop installer.
+
+## What's new in v1.0.4
+
+- Development and production builds now set the repository's mini program directory to the output they actually generate, resolving the missing `app.json` error when importing the repository root.
+- Setup and type checks preserve the selected development or production directory.
+- Local configuration generation preserves an existing AppID when no replacement is supplied. Invalid arguments, identifiers or malformed configuration files fail before generated configuration is written.
+- Upload preparation requires both an AppID and a cloud environment, preventing a guest-only build from being prepared as an account-enabled release. Ordinary builds still support guest previews.
+- The [sign-in troubleshooting guide](#sign-in-troubleshooting) explains how to rebuild with local deployment settings and refresh a stale compilation cache while preserving user data.
 
 ## Features
 
@@ -70,7 +80,7 @@ Requirements: Node.js 20+, pnpm, WeChat Developer Tools, and your own mini progr
 
 ```powershell
 pnpm install --frozen-lockfile
-Copy-Item .env.example .env.local
+if (!(Test-Path -LiteralPath .env.local)) { Copy-Item .env.example .env.local }
 # Set XQ_APP_ID and XQ_CLOUD_ENV in .env.local to your own values.
 pnpm setup:local
 pnpm dev:mp-weixin
@@ -78,7 +88,7 @@ pnpm dev:mp-weixin
 
 After compilation, import the **repository root** into WeChat Developer Tools and click Compile. Keep the development terminal running. The generated `project.config.json` points to `dist/dev/mp-weixin/`.
 
-Do not enter an AppSecret in the frontend. `.env.local` and generated deployment files are ignored by Git:
+Set `XQ_APP_ID` and `XQ_CLOUD_ENV` to your own deployment identifiers in the local, untracked `.env.local` file. Local process environment variables can also supply these values. Keep actual deployment values out of commits, release notes and screenshots. Do not enter an AppSecret in the frontend. `.env.local` and generated deployment files are ignored by Git:
 
 - `project.config.json`
 - `src/manifest.json`
@@ -109,6 +119,24 @@ pnpm build:h5
 
 Production output is written to `dist/build/mp-weixin` and `dist/build/h5`. Do not edit generated files. The mini program build automatically checks that the main package is below 1,500,000 bytes, component injection is enabled with `requiredComponents`, and each image/audio asset is at most 200,000 bytes. WeChat Developer Tools remains the final authority for its upload checks.
 
+The mini program build also sets the root project's `miniprogramRoot` to `dist/build/mp-weixin/`, so the repository root can be imported for preview after a successful build. Running `pnpm dev:mp-weixin` switches it back to `dist/dev/mp-weixin/`. Setup and type checks preserve the selected directory.
+
+If the project reports a missing `app.json`, run `pnpm install --frozen-lockfile` followed by `pnpm build:mp-weixin` in the directory containing `package.json`. Confirm that `dist/build/mp-weixin/app.json` exists, then reopen the project and compile. `setup:local` repairs configuration only; it does not generate the mini program. Do not create an empty `app.json` by hand.
+
+When `XQ_APP_ID` is absent, setup preserves an AppID already entered in the local project. Process environment values take priority over `.env.local`, then the existing AppID; an explicitly empty value selects guest mode. Account access and cloud sync still require your own cloud configuration and deployment.
+
+### Sign-in troubleshooting
+
+If sign-in reports that the cloud environment is missing, verify that your local `.env.local` contains the intended `XQ_APP_ID` and `XQ_CLOUD_ENV`. The selected environment must contain the deployed `ledger` cloud function. A preserved AppID alone does not supply a cloud environment, and editing `.env.local` does not update code that has already been compiled.
+
+1. Check the two local values and any overriding process environment variables. Keep them in local configuration; do not paste actual deployment identifiers into public issues or release notes.
+2. Stop the development compiler if it is running, then run `pnpm build:mp-weixin` from the directory containing `package.json`. For ongoing development, restart `pnpm dev:mp-weixin` instead and wait for compilation to finish.
+3. Reopen the repository root in the developer tools and compile. Confirm that `miniprogramRoot` points to the output of the command you just ran: `dist/build/mp-weixin/` for a production build or `dist/dev/mp-weixin/` for development.
+4. If the same missing-environment message remains after a successful rebuild, clear **only the compilation cache** in the developer tools, then compile and try signing in again. A stale compilation cache can retain the earlier bundle with an empty environment value. Preserve application storage and user data; do not use a clear-all-data action to resolve this build issue.
+5. If sign-in still fails, inspect the current error and the `ledger` function logs in the configured environment. Confirm that the project AppID and deployed function configuration match your own deployment. H5 supports guest browsing only and cannot be used to verify account sign-in.
+
+Clearing the compilation cache is separate from clearing the mini program's local storage. Local storage can contain unmigrated legacy records, pending requests and remembered sessions; keep it intact during this procedure.
+
 ### Uploading the trial mini program
 
 Sign in to WeChat Developer Tools and provide the actual CLI path on your machine:
@@ -120,6 +148,8 @@ pnpm upload:mp-weixin --prepare-only
 ```
 
 Every upload runs a fresh production build and package checks, then creates a new project under `work/wechat-release/` and copies `dist/build/mp-weixin` into its `miniprogram/` directory. It takes the upload version from `package.json` and requires both a CLI success result and a fresh receipt. It does not upload the repository root's potentially stale development output. The CLI path can also be set with the `XQ_WECHAT_CLI` environment variable.
+
+Both upload and `--prepare-only` validate that an AppID and cloud environment have been configured before building the release project. Fill in your own local deployment values first. To check this configuration explicitly, run `node scripts/prepare-local-config.cjs --mp-mode build --require-cloud`. Ordinary development and build commands remain available for guest previews without cloud configuration.
 
 After uploading, confirm the version in the mini program console and select that development version as the trial version. Reopen the trial mini program on your phone and check the version on the profile page. GitHub Releases and WeChat trial versions are separate publication channels. Generated upload projects and receipts in `work/` are not committed to Git.
 
@@ -151,7 +181,7 @@ Each invocation processes up to 20 due rules and advances their next date after 
 - Trial data exists only in memory for the current app session. It does not read legacy local bills or account caches and is never imported into the personal ledger when signing in. No phone number is required; avatars and nicknames are optional.
 - Trusted OPENID/APPID and a valid session are required for cloud ledger operations. Client-supplied account fields cannot replace server-side identity.
 - A dedicated local login record stores only the session credential, account identifier and expiry, with no bills or profile details. Server sessions last up to 24 hours. Later launches and foreground checks verify the remembered identity and renew expired sessions only for the same account. Temporary network failures retain the login record, hide account data and offer a connection retry.
-- Signing out removes the local login record, clears in-memory account data and filters, and returns to guest browsing without deleting cloud records or other devices' sessions. Clearing the mini program cache also returns the next launch to guest mode. An identity change clears the previous account state and requires a new voluntary sign-in. Login-storage failures display an error without modifying existing bills.
+- Signing out removes the local login record, clears in-memory account data and filters, and returns to guest browsing without deleting cloud records or other devices' sessions. Deleting the mini program's local storage also removes its remembered login; this differs from clearing the developer tools' compilation cache. An identity change clears the previous account state and requires a new voluntary sign-in. Login-storage failures display an error without modifying existing bills.
 - The app processes account identifiers, voluntarily provided profile details, entries, budgets and group membership. Shared book entries and author details are visible to group members. Open-source licensing does not authorize access to users' data.
 - Avatar uploads accept PNG/JPEG, are compressed by the client and checked by the server, with a size limit of roughly 200 KB. Storage paths are assigned on the server, and temporary display URLs are returned. Old avatar files are retained for historical records. Automated profile/avatar content moderation is not currently included.
 - `xq_books` stores books, profiles, groups and recurring rules. `xq_entries` stores records. `xq_requests` stores sessions, idempotency receipts, invitations and period markers. Do not delete `cycle_` markers: doing so can allow a deleted periodic entry to be recreated.
@@ -164,6 +194,30 @@ Legacy local data remains under `xiaoqing.ledger.v1`; schema 1/2 is supported. E
 Imports run in batches of up to 20 entries. Retrying skips existing IDs and preserves current budgets/settings; a failure may occur after earlier batches have succeeded. Cross-book imports attribute entries to the importing user and remove recurring-rule associations. Pending requests remain isolated by environment, account and book, and can be retried after reconnecting. Concurrent edits require refreshing and reconfirming instead of overwriting another device's changes. Offline entry creation in account ledgers is not supported.
 
 Amounts are stored as integer cents. JSON exports include entries, categories and budgets, but not group membership, invitations, recurring rules or profile configuration. Limits: 50,000 entries and 2,000,000 characters per JSON backup. Backups are not encrypted. Cloud storage is not a substitute for independent backups; clearing local storage may discard unmigrated data and pending requests.
+
+## Desktop development and deployment
+
+The desktop client uses a separate interface and shares amount calculations, categories, filtering, budgets, statistics, synchronization and conflict handling with the mini program. It supports personal and group books, calendar views, filtered CSV exports, copied entries and recurring rules. Profile editing and complete JSON backup restoration remain in the mini program.
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm test
+pnpm build:desktop-gateway
+pnpm desktop
+pnpm package:desktop
+```
+
+Desktop development and packaging require Node.js 22.12 or later. Set `XQ_DESKTOP_API_URL` in your local `.env.local` to the HTTPS URL of your separately deployed desktop gateway before packaging. Generated `release/` files and local configuration are not committed. The existing Windows preview is an unsigned test build; the commands above do not mean that a new installer has been published.
+
+Deploy `ledger` and the separate `desktop-gateway` in the same cloud environment. Expose only `desktop-gateway` through an HTTPS gateway; keep the original `ledger` function off anonymous HTTP endpoints. Configure `XQ_WECHAT_APP_SECRET` only in the gateway's server-side environment, never in `.env.local`, source files, the installer or a chat message. The server must be able to reach the required platform APIs and satisfy their IP allowlist settings.
+
+Desktop sign-in obtains a one-time mini program code. Scan it on a phone, compare the six-digit code shown on both devices and explicitly confirm sign-in. The desktop then receives a separate, short-lived session for the same account and books. Set `XQ_MINI_ENV` to `release`, `trial` or `develop`, and ensure that the corresponding mini program version includes `pages/desktop-login/index`.
+
+For trial testing, upload the mini program containing that page, make it available to trial users, set `XQ_MINI_ENV=trial` locally, run `pnpm build:desktop-gateway` and redeploy the gateway. After the mini program is publicly released, switch to `release`, rebuild and redeploy. Server-side environment variables take precedence over generated local configuration. Release codes validate page availability; trial and development codes target their respective code versions.
+
+Configure gateway rate limits and quotas for unauthenticated requests. The function's additional global code-generation limits are 30 requests per minute and 500 per day, using UTC windows; these do not replace gateway protection. Gateway failures return the operation stage and numeric error code rather than raw platform error text or credentials.
+
+Desktop acceptance testing still requires two real devices and two accounts. Check confirmation, cancellation, expiry, replay protection, account and group isolation, duplicate-write prevention, recovery after network interruption, sign-out and compatibility with existing mini program records. Automated tests do not establish complete desktop or production acceptance.
 
 ## Project structure
 

@@ -1,10 +1,76 @@
-# Ubuntu 工作流
+# Development and release workflows
 
-验证日期：2026-10-28；环境 Ubuntu 22.04.5 LTS x86_64。初始 PATH 无 Node.js/npm/pnpm，node_modules 缺失。本轮在临时目录安装 Node.js 22.16.0（官方归档 SHA-256 校验通过）、pnpm 10.20.0，未修改系统 PATH 配置或项目依赖版本。临时工具链不是永久环境，迁移/重启后应重新提供工具链并加入当前 shell PATH。
+Updated: 2026-11-02. The current checkout runs on Windows with PowerShell. Earlier Ubuntu results are retained below as historical evidence. Discover the active Node.js, pnpm and Git tools for each session; do not assume private absolute runtime paths or persist machine-specific paths in this memory.
 
-## 已验证命令
+## Current setup and build selection
 
-在仓库根目录，使用上述工具链：
+From the repository root:
+
+```powershell
+pnpm install --frozen-lockfile
+if (!(Test-Path -LiteralPath .env.local)) { Copy-Item .env.example .env.local }
+pnpm setup:local
+pnpm build:mp-weixin
+```
+
+Fill `XQ_APP_ID` and `XQ_CLOUD_ENV` in the ignored local file when account sign-in is required. Never include actual values in public prose or commits. Process environment values take precedence; an existing AppID is preserved if no replacement is supplied, but an explicitly empty AppID selects guest mode. The cloud environment must be configured separately.
+
+`build:mp-weixin` selects `dist/build/mp-weixin/`; `dev:mp-weixin` selects `dist/dev/mp-weixin/`. Wait for a completed build before opening the repository root in the developer tools. Keep the development compiler running for live changes. Setup and type checks preserve the selected directory. `setup:local` alone does not generate `app.json`, and an empty hand-written `app.json` is not a repair.
+
+Ordinary guest-preview builds are allowed without cloud settings. Upload preparation requires the two deployment identifiers, including prepare-only:
+
+```powershell
+node scripts/prepare-local-config.cjs --mp-mode build --require-cloud
+pnpm upload:mp-weixin --prepare-only
+```
+
+The first command checks/generates local configuration; the second rebuilds and creates an isolated upload project without uploading it. They are not proof of a remote release, mini program upload or review submission. Actual upload requires a configured, signed-in developer-tools CLI and authorization for that action.
+
+## Missing-environment sign-in recovery
+
+1. Confirm the intended local `XQ_APP_ID`/`XQ_CLOUD_ENV` and any overriding process values; the selected environment must contain the deployed `ledger` function.
+2. Rebuild, or restart the development compiler and wait for compilation. Reopen the repository project and check its selected output directory.
+3. If the old missing-environment error persists, clear only the developer tools' compilation cache, then compile and retry sign-in. Do not clear application storage or all user data.
+4. If a current error remains, inspect it and the corresponding cloud-function logs. H5 cannot validate account login because it supports guest browsing only.
+
+**Observed, 2026-11-02:** simulator login displayed a personal account, synchronized status and a recent sync timestamp after rebuild/cache recovery. The ledger was empty. This observation does not establish physical-device or multi-account acceptance.
+
+## Validation before committing
+
+Applicable commands include:
+
+```powershell
+pnpm test
+pnpm type-check
+pnpm build:mp-weixin
+pnpm build:h5
+```
+
+Record command outcomes in `status.md` only after they finish. On 2026-11-02, the current v1.0.4 full test run, type check and production mini program build passed. This does not claim a new H5 build in this round. Package checks require a main package below 1500000 bytes, `requiredComponents`, and image/audio assets no larger than 200000 bytes. The current output check confirmed the selected root, all 14 pages, version 1.0.4/code 10004 and a populated cloud environment without logging identifiers; exact package sizes are in `status.md`.
+
+`pnpm test` first regenerates the shared core, then runs 11 test entry points:
+
+| Entry points | Coverage and limit |
+| --- | --- |
+| version, upload-mp-weixin | Version generation, mode/credential handling, upload preflight/build/receipts; upload is mocked |
+| ledger, insights | Data compatibility, amounts, failed storage, filtering, budgets and statistics |
+| ui-features | Simulated page setup and interactions, not physical-device rendering |
+| cloud | Mock database isolation, transactions, concurrent writes, pagination and recovery |
+| auth, auth-persistence | Guest isolation, sign-in, storage, restoration, account changes and network failures |
+| features | Groups, profiles, categories and recurring semantics |
+| desktop-auth, desktop-gateway | Pairing, expiry/replay, gateway restrictions and flat generated-file consistency |
+
+Simulated upload success and injected database errors are not remote deployment events or production incidents. Review generated tracked `cloudfunctions/ledger/core.cjs` for unintended changes. Keep configuration, `dist`, release artifacts and scratch files out of the commit. Documentation-only work needs factual/link review rather than tests that merely repeat prose.
+
+## Git, publication and project memory
+
+Inspect `git status --short`, `git diff --check`, intended changes and sensitive content; stage only authorized files. Commit and push to the actual branch on `origin`. On remote changes, inspect and integrate them; do not reset user work or force-push. Preserve a local commit if pushing fails.
+
+The user authorized v1.0.4 repository publication on 2026-11-02. Preparation retains the prior pre-release status and provides source archives. Use English commit messages, release title/body and updated documentation. Publication is pending at the time this record is prepared; confirm the final result from remote tag/release evidence. No new v1.0.4 desktop installer, cloud deployment or mini program review submission is implied. Keep memory factual, public, dated and repository-local; never read or update global user memory.
+
+## Historical Ubuntu checks: 2026-10-28
+
+The previous session used Ubuntu 22.04.5 LTS x86_64 with temporary Node.js 22.16.0 (official archive checksum verified) and pnpm 10.20.0. It did not permanently configure the toolchain or change dependency versions. The following commands passed in that session:
 
 ```bash
 pnpm install --frozen-lockfile
@@ -16,40 +82,14 @@ pnpm build:desktop-ui
 pnpm build:desktop-gateway
 ```
 
-**测试通过**：本轮安装使用临时 `--store-dir`，952 个包，锁文件无变化；其余命令均成功。`CI=1` 跳过 uni-app 更新检查，避免受限环境 `os.networkInterfaces()` 报 `uv_interface_addresses` 错误（依据安装依赖 `uni-cli-shared/dist/checkUpdate.js`）。无需更改源码或依赖。
+The installation used a temporary store and 952 packages with an unchanged lockfile. `CI=1` skipped the dependency's update check to avoid restricted `os.networkInterfaces()` access; source/dependencies were not patched. pnpm reported ignored dependency scripts, but actual frontend builds succeeded, so no blanket script approval or dependency upgrade was introduced.
 
-安装时 pnpm 10.20.0 提示部分依赖构建脚本被忽略（含 esbuild）；既有 `pnpm-workspace.yaml` 使用 allowBuilds。此次前端构建实际成功，不因提示盲目批准全部安装脚本或升级依赖。
+Historical configuration was empty and could not verify login. The example gateway mode was `release`; old desktop release notes described `trial`, which did not prove the server's actual environment setting. A safe Linux configuration copy can use `cp -n .env.example .env.local`; do not copy Windows drive paths into Linux instructions.
 
-## 配置位置
+## Desktop and platform limits
 
-**代码已实现**（`.env.example`、生成脚本）：需要云端联调时，在未跟踪的 `.env.local` 安全填写 XQ_APP_ID、XQ_CLOUD_ENV、XQ_DESKTOP_API_URL、XQ_MINI_ENV，不能在聊天或提交中提供真实值。可用 `cp -n .env.example .env.local` 防止覆盖已有文件；本轮未创建含实际值的配置。
-
-`pnpm setup:local` 生成小程序/ledger 配置；`node scripts/prepare-desktop.cjs` 生成桌面配置；`pnpm build:desktop-gateway` 生成网关平铺文件及扫码模式。环境变量优先于本地文件。缺配置仍可构建，但不能验证云登录；AppSecret 变量 XQ_WECHAT_APP_SECRET 仅配置于云函数服务端，不放 `.env.local`。
-
-## 测试入口与边界
-
-`pnpm test` 先生成共享核心，然后顺序运行 11 个 `.test.cjs`：
-
-| 入口 | 覆盖范围 |
-| --- | --- |
-| version、upload-mp-weixin | 版本一致性、上传构建/回执流程；上传为模拟，不实际发布 |
-| ledger、insights | 数据兼容、金额、存储失败、筛选、预算和统计 |
-| ui-features | 页面 setup 与交互模拟，不是真机渲染 |
-| cloud | 模拟数据库隔离、事务、并发、分页及恢复 |
-| auth、auth-persistence | 游客隔离、登录、存储、恢复、账号变化及网络异常 |
-| features | 群组、资料、分类及周期语义 |
-| desktop-auth、desktop-gateway | 配对、失效、重放、网关限制及平铺文件一致性 |
-
-测试中的模拟上传成功文字和 DATABASE_ERROR 故障注入不是实际部署/云端事故。检查结束后用 `git diff` 确认已跟踪 `cloudfunctions/ledger/core.cjs` 无意外变更，配置与 dist 等产物未加入提交。
-
-## 桌面及发布边界
-
-- 桌面 UI 构建通过；Electron 45.0.0 运行文件已下载。受限会话有 ELECTRON_RUN_AS_NODE，直接 `electron --version` 输出的是内嵌 Node 版本，不能当 Electron 版本证据。
-- 去掉 ELECTRON_RUN_AS_NODE 后启动因 sandbox_host_linux / shutdown 不允许而失败，且会话没有 DISPLAY/WAYLAND_DISPLAY。未完成 GUI 运行验收，不关闭应用安全配置绕过。
-- 有正常图形会话和工具链后，候选命令为 `env -u ELECTRON_RUN_AS_NODE pnpm desktop`；本轮尚未验证该完整命令。
-- `pnpm package:desktop` 明确执行 Windows NSIS 打包。本机 PATH 未发现 wine、makensis、xvfb-run；尚未尝试 exe 构建，不宣称 Ubuntu 绝对不能构建或已经构建成功。需要发布任务时再评估工具链或 Windows CI，不擅自改流程。
-- 小程序编译可在 Ubuntu 完成，微信开发者工具上传、实际图标显示和真机扫码需另行验收。不要照搬 `dev.ps1`、Windows CLI 路径；上传命令或 prepare-only 不属于本次执行范围。
-
-## 提交流程
-
-核对 `git status --short`、`git diff --check`、目标文件差异及敏感信息，只暂存本轮文件；普通提交后 `git push origin main`（其他任务以实际分支为准）。远程变化时先检查，不重置、不强推。文档修改无需追加镜像实现的测试，保证链接、事实及验证层级正确即可。
+- Desktop development requires Node.js 22.12 or later. Configure `XQ_DESKTOP_API_URL` locally and `XQ_WECHAT_APP_SECRET` only server-side. `build:desktop-gateway` keeps shared files flat in the gateway root.
+- Choose `XQ_MINI_ENV` for the deployed mini program code version. Trial/development code must include the desktop confirmation page, and trial users need access. Server environment values override generated settings.
+- Historically, the Ubuntu session had `ELECTRON_RUN_AS_NODE` set. Its version output was not evidence of Electron GUI launch. Removing it still failed in the restricted, headless session; application security settings were not disabled to bypass that failure.
+- Windows NSIS packaging was not attempted in that Ubuntu session because its packaging toolchain was unavailable. The current v1.0.4 task does not claim a new installer build or installation test.
+- Physical-device sign-in, complete desktop pairing, synchronization, group access, interruption handling and installer compatibility require separate acceptance evidence. Mock tests and a simulator login do not replace them.

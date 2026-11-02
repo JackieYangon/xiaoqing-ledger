@@ -93,27 +93,31 @@ function prepareAndUpload(options, execute = run) {
   if (!options.prepareOnly && (!cli || !fs.existsSync(cli))) throw Error('Developer tools CLI was not found')
   const desc = options.desc || `Xiaoqing Ledger ${pkg.version}: refresh mini-program version and build`
   const uploadBase = path.join(root, 'work', 'wechat-release')
-  fs.mkdirSync(uploadBase, { recursive: true })
-  const uploadDir = fs.mkdtempSync(path.join(uploadBase, 'project-'))
-  const receipt = path.join(uploadDir, 'upload-' + randomUUID() + '.json')
-  const args = ['upload', '--project', uploadDir, '--version', pkg.version, '--desc', desc, '--info-output', receipt]
-  if (process.platform === 'win32' && /\.(bat|cmd)$/i.test(cli)) batchCommand(cli, args)
+  if (process.platform === 'win32' && /\.(bat|cmd)$/i.test(cli))
+    batchCommand(cli, ['upload', '--project', uploadBase, '--version', pkg.version, '--desc', desc])
   const productionDir = path.join(root, 'dist', 'build', 'mp-weixin')
   const buildEnv = { ...process.env, UNI_INPUT_DIR: path.join(root, 'src'), UNI_OUTPUT_DIR: productionDir }
+
+  // Upload preparation requires both deployment identifiers, including prepare-only.
+  // Fail before changing generated files, building, or creating an upload project.
+  execute(process.execPath, ['scripts/prepare-local-config.cjs', '--mp-mode', 'build', '--require-cloud'], { cwd: root, env: buildEnv })
 
   // Rebuild on every upload. Neither a successful old receipt nor an existing
   // output directory can skip this step, even if the version has not changed.
   for (const task of [
-    ['scripts/prepare-local-config.cjs'],
     ['node_modules/@dcloudio/vite-plugin-uni/bin/uni.js', 'build', '-p', 'mp-weixin'],
     ['scripts/check-mp-quality.cjs'],
   ]) execute(process.execPath, task, { cwd: root, env: buildEnv })
 
   const project = JSON.parse(fs.readFileSync(path.join(root, 'project.config.json'), 'utf8'))
-  if (!options.prepareOnly && !/^wx[0-9a-f]{16}$/.test(project.appid))
+  if (!/^wx[0-9a-f]{16}$/.test(project.appid))
     throw Error('A configured mini-program AppID is required for upload')
   if (!fs.existsSync(path.join(productionDir, 'app.json')))
     throw Error('Production build did not produce app.json')
+  fs.mkdirSync(uploadBase, { recursive: true })
+  const uploadDir = fs.mkdtempSync(path.join(uploadBase, 'project-'))
+  const receipt = path.join(uploadDir, 'upload-' + randomUUID() + '.json')
+  const args = ['upload', '--project', uploadDir, '--version', pkg.version, '--desc', desc, '--info-output', receipt]
   // The developer tools do not allow miniprogramRoot to escape the project.
   // Copy into a new project directory for every attempt to exclude stale files.
   copyProductionFiles(productionDir, path.join(uploadDir, 'miniprogram'))

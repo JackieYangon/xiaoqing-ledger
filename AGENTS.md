@@ -1,13 +1,16 @@
-# 项目协作约定
+# Repository collaboration rules
 
-- 本项目根目录以当前 Git 工作树为准；已从 Windows 迁移到 Ubuntu，不依赖历史盘符路径。
-- 按用户要求，每轮代码修改完成并通过相关验证后，直接创建 Git 提交并推送到 GitHub 远程仓库 origin，提交信息说明具体改动，无需再次询问。若推送失败，保留本地提交并说明原因；不得强制推送覆盖远程历史。
-- 前端源码在 src 中，云端源码在 cloudfunctions 中；dist 为生成文件，不直接修改或提交。
-- 数据格式升级必须兼容已有账单，存储或校验失败时不得覆盖原始数据。
-- 品牌、界面文案、文档及提交说明仅使用小青账本自身表述，不加入第三方产品名称、链接或对标描述。
+- The repository root is the directory containing this `AGENTS.md` and `package.json`. Use paths relative to that directory; do not assume a machine-specific checkout location.
+- After each authorized code change is complete and relevant validation passes, create a Git commit describing the concrete change and push it to the `origin` remote without asking again. If pushing fails, keep the local commit and report the reason. Never force-push over remote history.
+- Write all new or updated repository-facing prose in English. This includes documentation, Git commit messages, pull request titles and descriptions, issues and comments, release titles and notes, and developer-facing script messages and comments. Keep application interface text in its established language unless the user explicitly requests a translation.
+- Frontend source belongs in `src`; cloud source belongs in `cloudfunctions`. `dist` contains generated output: do not edit it directly or commit it. Keep local deployment configuration, credentials and generated release output out of Git.
+- Data-format changes must remain compatible with existing ledger records. A storage or validation failure must not overwrite original user data. Troubleshooting compilation must preserve application storage, legacy records and pending requests; clear only the compilation cache when that is the relevant remedy.
+- Use Xiaoqing Ledger's own terminology in branding, interface text, documentation and commit descriptions. Do not introduce third-party product names, links or comparisons as product branding or positioning.
 
-## 项目独立记忆
+## Repository-local project memory
 
-- 开始相关工作前阅读 `.codex/project-memory/README.md`，按索引核对状态、决策、架构及工作流；重要变化同步更新对应记忆，并注明日期、证据和验证层级。
-- 记忆仅限本仓库公开信息，不读取、迁入或修改用户全局记忆，不记录真实部署标识、密钥、会话凭据、用户数据或私人绝对路径。
-- 每轮代码或文档修改完成后，执行适用验证并检查差异及敏感信息，再提交并推送 origin；推送失败保留本地提交并说明，禁止强制推送。普通推送不等于发布版本或部署云函数。
+- Before relevant work, read `.codex/project-memory/README.md`, then follow its index to check the current status, decisions, architecture and workflows. Verify implementation details against source and tests; historical documentation is not evidence of current validation.
+- Update the relevant memory entries when important facts change, instead of appending contradictory states. Date important conclusions, cite their evidence and distinguish implemented code, passed tests, user confirmation and unverified claims.
+- Store only public project facts and conventions in this repository's memory. Do not read, import or modify the user's global memory. Do not record actual deployment identifiers, secrets, session credentials, user data or private absolute paths; use variable names and repository-relative paths.
+- Check Git status before editing and preserve existing work. After code or documentation changes, run applicable checks and review the diff for correctness and sensitive information before committing and pushing to `origin`. Retain local commits if pushing fails, report the reason and never force-push.
+- Record conflicts between background information, older documentation and the implementation in the project status before changing product behavior. Ordinary commits and pushes do not authorize a release, deployment or history rewrite; those actions require authorization for the specific task. Apply authorization already given in the conversation without asking again.
