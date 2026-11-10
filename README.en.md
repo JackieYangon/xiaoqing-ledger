@@ -49,7 +49,8 @@ The interface is in Simplified Chinese; this README provides English setup and u
 
 - A consistent green theme, cards, spacing and numeric hierarchy refresh the mini program's home, records, statistics and profile pages.
 - Static explanatory prose is removed across the mini program, while action labels, necessary status messages, validation and confirmations remain.
-- Horizontal total-budget and category-budget usage bars replace category rankings and the five largest entries on the mini program statistics page. Rows show limits, spending, remaining amounts or overspending, retaining the actual percentage when over budget.
+- A single budget card lets you select a total or category budget and view its limit, spending, remaining amount or overspending, and actual usage percentage.
+- The yearly cashflow chart combines monthly income and expense lines with balance bars. Empty months keep their labels and break the lines, future months are hidden, and negative balances appear below zero.
 - Yearly budget views preserve each month's limits without creating an annual budget. The current month counts through today; future months are marked as not started. Budget rows for started months open the matching expense records.
 
 See [missing app.json troubleshooting](#missing-appjson-at-the-project-root) and [sign-in troubleshooting](#sign-in-troubleshooting) for setup issues.

@@ -138,6 +138,19 @@ function boundedDay(month: string, day: number) {
   return `${month}-${String(Math.min(day, monthDays(month))).padStart(2, '0')}`
 }
 
+export function monthlyCashflow(entries: Entry[], year: string, asOf = today()) {
+  checkMonth(`${year}-01`)
+  checkAsOf(asOf)
+  const currentYear = asOf.slice(0, 4)
+  const count = year < currentYear ? 12 : year === currentYear ? Number(asOf.slice(5, 7)) : 0
+  return Array.from({ length: count }, (_, index) => {
+    const month = `${year}-${String(index + 1).padStart(2, '0')}`
+    const items = entries.filter((entry) => entry.date.startsWith(month + '-') && entry.date <= asOf)
+    const total = summarize(items)
+    return { month, label: index + 1, hasData: items.length > 0, income: total.income, expense: total.expense, balance: total.income - total.expense }
+  })
+}
+
 export interface BudgetUsageRow {
   key: string
   name: string

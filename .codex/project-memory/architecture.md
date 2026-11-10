@@ -6,7 +6,7 @@
 
 - 小程序：Vue 3、TypeScript、uni-app；src/main.ts 和 src/App.vue 处理启动及前台恢复认证，src/pages.json 声明页面和四个底部导航。src/pages/ 包括记账、明细、预算、统计、群组、资料、定期任务、备份及桌面登录确认。
 - src/styles/theme.css 由 src/App.vue 引入，统一小程序主题、卡片、表单和账单列表样式；各页面保留局部布局。
-- src/core/ledger.ts 负责整数分金额、schema 1/2 兼容、校验、分类、预算、备份合并和统计；src/core/insights.ts 负责两端筛选、排序、预算复制草稿、同进度统计，以及供小程序使用的 budgetUsage 月度预算用量。budgetUsage 返回月度分组和限额、支出、剩余、超出、真实百分比及条形宽度，不修改输入数据。
+- src/core/ledger.ts 负责整数分金额、schema 1/2 兼容、校验、分类、预算、备份合并和统计；src/core/insights.ts 负责两端筛选、排序、预算复制草稿、同进度统计，以及供小程序使用的 budgetUsage 月度预算用量及 monthlyCashflow 年度逐月收支；MonthlyCashflowChart.vue 以原生视图绘制收入/支出折线和结余柱，空月断线、未来月份隐藏。budgetUsage 返回月度分组和限额、支出、剩余、超出、真实百分比及条形宽度，不修改输入数据。
 - src/services/ledger.ts 维护当前账号/账本状态、读写及切换；src/core/cloud-client.ts 处理 revision 分页、幂等请求、待确认写入及恢复。待确认存储键按环境、账号、群组隔离，退出不直接删除未确认写入。
 - src/services/guest-ledger.ts 用内存适配器构造示例账本，不访问旧数据，不随登录迁入正式账本。H5 为游客体验，条件编译禁用云端账号登录。
 - 桌面：desktop/ui/main.js 加载 App.vue，界面复用共同核心；desktop/main.cjs 创建 Electron 窗口及 HTTPS 请求，preload.cjs 仅暴露受限 IPC。启用 contextIsolation/sandbox，关闭 nodeIntegration，限制新窗口和导航。会话凭据在界面内存，待确认请求使用 localStorage。

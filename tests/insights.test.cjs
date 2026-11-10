@@ -16,12 +16,33 @@ function load(name) {
   return exports
 }
 const { emptyState, createRepository, MAX_CENTS } = load('ledger')
-const { filterEntries, previousMonthBudget, sumCategoryBudget, budgetPace, budgetUsage, periodReport } = load('insights')
+const { filterEntries, previousMonthBudget, sumCategoryBudget, budgetPace, budgetUsage, monthlyCashflow, periodReport } = load('insights')
 const plain = (value) => JSON.parse(JSON.stringify(value))
 const entry = (id, date, cents, extra = {}) => ({
   id, date, cents, kind: 'expense', category: '餐饮', note: '', version: 1,
   updatedAt: `${date}T12:00:00Z`, ...extra,
 })
+
+const cashflowEntries = [
+  entry('jan-income', '2026-01-01', 10000, { kind: 'income' }),
+  entry('jan-expense', '2026-01-15', 4000),
+  entry('march-loss', '2026-03-01', 3000),
+  entry('future-day', '2026-03-30', 99000),
+  entry('future-month', '2026-04-01', 99000),
+  entry('other-year', '2025-01-01', 99000),
+]
+const cashflowBefore = JSON.stringify(cashflowEntries)
+const cashflow = monthlyCashflow(cashflowEntries, '2026', '2026-03-10')
+assert.deepEqual(plain(cashflow.map(item => item.label)), [1, 2, 3])
+assert.deepEqual(plain(cashflow[0]), { month: '2026-01', label: 1, hasData: true, income: 10000, expense: 4000, balance: 6000 })
+assert.equal(cashflow[1].hasData, false, '空月份保留位置但不生成图形数据')
+assert.equal(cashflow[2].balance, -3000, '结余可为负且排除未来日期')
+assert.equal(monthlyCashflow([], '2025', '2026-03-10').length, 12)
+assert.equal(monthlyCashflow([], '2027', '2026-03-10').length, 0)
+assert.equal(monthlyCashflow([], '2026', '2026-01-01').length, 1)
+assert.equal(monthlyCashflow([], '2026', '2026-12-31').length, 12)
+assert.throws(() => monthlyCashflow([], 'oops', '2026-03-10'))
+assert.equal(JSON.stringify(cashflowEntries), cashflowBefore)
 
 // Search spans months and retains removed categories, authors and inclusive amount/date limits.
 const source = [

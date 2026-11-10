@@ -108,7 +108,7 @@ function setupPage(filename, env, props = {}, globals = {}) {
     }
     if (request === '@/services/navigation') return { useNavigationIcons() {} }
     if (request === '@/services/ledger') return env.service
-    if (['@/components/BillList.vue', '@/components/GuestNotice.vue', '@/components/SessionNotice.vue'].includes(request)) return {}
+    if (['@/components/BillList.vue', '@/components/GuestNotice.vue', '@/components/SessionNotice.vue', '@/components/MonthlyCashflowChart.vue'].includes(request)) return {}
     if (request === '@/core/ledger' || request.endsWith('/core/ledger.ts')) return core
     if (request === '@/core/insights' || request.endsWith('/core/insights.ts')) return loadCore('insights')
     throw new Error(`Unexpected import in ${filename}: ${request}`)
@@ -231,6 +231,14 @@ async function checkMiniRecordsAndStats() {
   const beforeBudgetView = env.raw()
   assert.equal(stats.page.budgetMonths.value[0].rows[0].spent, 3500)
   assert.equal(stats.page.budgetMonths.value[0].rows[0].remaining, 6500)
+  assert.equal(stats.page.activeBudget.value.row.name, '总预算')
+  stats.page.selectBudget({ detail: { value: 1 } })
+  assert.equal(stats.page.activeBudget.value.row.category, '交通')
+  assert.equal(stats.page.activeBudget.value.row.limit, 5000)
+  assert.equal(stats.page.activeBudget.value.row.spent, 0)
+  assert.equal(stats.page.cashflowMonths.value.length, 10)
+  assert.equal(stats.page.cashflowMonths.value[9].expense, 3500)
+  stats.page.selectBudget({ detail: { value: 0 } })
   page.query.value = '不匹配'
   page.kind.value = 'income'
   page.minAmount.value = '999'
@@ -277,6 +285,7 @@ async function checkMiniRecordsAndStats() {
   stats.page.changePeriod('month')
   stats.page.changeMonth({ detail: { value: '2026-08' } })
   assert.equal(stats.page.budgetMonths.value.length, 0, '未设置预算显示空状态')
+  assert.equal(stats.page.activeBudget.value, undefined)
 
   page.changeView('calendar')
   assert.equal(page.rangeMode.value, 'month')
@@ -386,6 +395,21 @@ async function checkDesktopBudget() {
 }
 
 ;(async () => {
+  const chartProps = vue.reactive({ months: loadCore('insights').monthlyCashflow([
+    entry('jan', '2026-01-01', 1000, { kind: 'income' }),
+    entry('march', '2026-03-01', 3000),
+    entry('april', '2026-04-01', 2000, { kind: 'income' }),
+  ], '2026', '2026-04-10') })
+  const chart = setupPage('src/components/MonthlyCashflowChart.vue', environment(), chartProps)
+  assert.equal(chart.page.lines.value.length, 2, '两条线只连接相邻有数据月份，不跨过二月空档')
+  assert.equal(chart.page.points.value[1].hasData, false)
+  assert.ok(chart.page.points.value[2].balanceY > chart.page.zero.value, '负结余位于零轴下方')
+  chart.page.selectedMonth.value = '2026-01'
+  chartProps.months = []
+  await settle()
+  assert.equal(chart.page.selected.value, undefined)
+  assert.equal(chart.page.lines.value.length, 0)
+  chart.stop()
   await checkMiniBudget()
   await checkMiniRecordsAndStats()
   await checkDesktopBudget()

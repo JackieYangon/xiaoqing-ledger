@@ -4,6 +4,7 @@ import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
 import { browseReady } from '@/services/auth'
 import GuestNotice from '@/components/GuestNotice.vue'
+import MonthlyCashflowChart from '@/components/MonthlyCashflowChart.vue'
 import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
@@ -13,7 +14,7 @@ import {
   monthDays,
   type Kind,
 } from '@/core/ledger'
-import { budgetUsage, periodReport, type BudgetUsageMonth, type BudgetUsageRow } from '@/core/insights'
+import { budgetUsage, monthlyCashflow, periodReport, type BudgetUsageMonth, type BudgetUsageRow } from '@/core/insights'
 import { state, entries, loadError, refresh, recordFilter, currentBookId } from '@/services/ledger'
 const month = ref(today().slice(0, 7)),
   kind = ref<Kind>('expense'),
@@ -23,6 +24,17 @@ const report = computed(() => periodReport(entries.value, month.value, period.va
 const periodEntries = computed(() => report.value.currentEntries)
 const total = computed(() => report.value.current)
 const budgetMonths = computed(() => budgetUsage(entries.value, state.value.budgets, month.value, period.value))
+const cashflowMonths = computed(() => monthlyCashflow(entries.value, month.value.slice(0, 4)))
+const budgetKey = ref('')
+const budgetOptions = computed(() => budgetMonths.value.flatMap(group => group.rows.map(row => ({
+  key: `${group.month}:${row.key}`, label: period.value === 'year' ? `${group.month} · ${row.name}` : row.name, group, row,
+}))))
+const budgetIndex = computed(() => Math.max(0, budgetOptions.value.findIndex(option => option.key === budgetKey.value)))
+const activeBudget = computed(() => budgetOptions.value[budgetIndex.value])
+function selectBudget(e: any) {
+  budgetKey.value = budgetOptions.value[Number(e.detail.value)]?.key || ''
+}
+watch([month, period, currentBookId], () => { budgetKey.value = '' })
 const previous = computed(() => report.value.previous[kind.value])
 const comparison = computed(() => {
   if (!report.value.elapsedDays) return '该周期尚未开始'
@@ -138,6 +150,8 @@ onShow(refresh)
         </view>
       </view>
     </view>
+    <view class="section">{{ month.slice(0, 4) }} 年收支</view>
+    <MonthlyCashflowChart :months="cashflowMonths" />
     <view class="section">{{ kind === 'expense' ? '消费' : '收入' }}趋势</view>
     <view class="card trend-card">
       <view class="row">
@@ -175,17 +189,20 @@ onShow(refresh)
     <view v-if="!budgetMonths.length" class="card empty">
       {{ period === 'year' ? '该年尚未设置预算' : '该月尚未设置预算' }}
     </view>
-    <view v-for="budgetMonth in budgetMonths" :key="budgetMonth.month" class="card budget-card">
+    <view v-if="activeBudget" class="card budget-card">
+      <picker :range="budgetOptions" range-key="label" :value="budgetIndex" @change="selectBudget">
+        <view class="row budget-picker"><text>{{ activeBudget.label }}</text><text>切换 ▾</text></view>
+      </picker>
       <view class="row budget-month-heading">
-        <text class="budget-month">{{ budgetMonth.month }}</text>
-        <text class="muted small">{{ budgetMonth.phase === 'future' ? '尚未开始' : budgetMonth.phase === 'current' ? '截至 ' + budgetMonth.endDate.slice(5) : '完整月份' }}</text>
+        <text class="budget-month">{{ activeBudget.group.month }}</text>
+        <text class="muted small">{{ activeBudget.group.phase === 'future' ? '尚未开始' : activeBudget.group.phase === 'current' ? '截至 ' + activeBudget.group.endDate.slice(5) : '完整月份' }}</text>
       </view>
       <view
-        v-for="item in budgetMonth.rows"
-        :key="item.key"
+        v-for="item in [activeBudget.row]"
+        :key="activeBudget.key"
         class="budget-usage"
         :class="{ 'budget-over': item.overage > 0 }"
-        @tap="drillBudget(budgetMonth, item)"
+        @tap="drillBudget(activeBudget.group, item)"
       >
         <view class="row budget-usage-heading">
           <text class="budget-name">{{ item.name }}</text>
@@ -201,7 +218,7 @@ onShow(refresh)
         <view class="row budget-usage-footer">
           <text v-if="item.overage > 0" class="budget-remainder">超出 ¥ {{ money(item.overage) }}</text>
           <text v-else class="budget-remainder">剩余 ¥ {{ money(item.remaining) }}</text>
-          <text v-if="budgetMonth.phase !== 'future'" class="budget-detail">支出明细 ›</text>
+          <text v-if="activeBudget.group.phase !== 'future'" class="budget-detail">支出明细 ›</text>
         </view>
       </view>
     </view>
@@ -282,6 +299,9 @@ onShow(refresh)
 }
 .budget-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16rpx; }
 .budget-card { padding: 28rpx; }
+.budget-picker { padding: 20rpx; margin-bottom: 24rpx; border-radius: 18rpx; background: #e8f3ee; color: #16846b; font-size: 26rpx; }
+.budget-picker > text:first-child { min-width: 0; overflow-wrap: anywhere; }
+.budget-picker > text:last-child { flex-shrink: 0; font-size: 23rpx; }
 .budget-month-heading { padding-bottom: 6rpx; }
 .budget-month { font-size: 28rpx; font-weight: 600; }
 .budget-usage { padding: 28rpx 0; border-bottom: 1rpx solid var(--xq-line, #e9eeeb); }
