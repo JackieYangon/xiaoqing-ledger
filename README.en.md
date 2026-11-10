@@ -1,7 +1,7 @@
 <p align="center"><img src="src/static/avatar.png" width="88" height="88" alt="Xiaoqing Ledger logo" /></p>
 <h1 align="center">Xiaoqing Ledger</h1>
 <p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
-<p align="center"><a href="README.md">简体中文</a> · <b>English</b> · <a href="docs/releases/v1.0.4-r1.md">v1.0.4-r1 release notes</a></p>
+<p align="center"><a href="README.md">简体中文</a> · <b>English</b> · <a href="docs/releases/v1.0.5.md">v1.0.5 release notes</a></p>
 <p align="center">
   <a href="#whats-new-in-v105"><img src="https://img.shields.io/badge/version-1.0.5-237859?style=flat-square" alt="Version 1.0.5" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
@@ -43,7 +43,7 @@ The interface is in Simplified Chinese; this README provides English setup and u
 
 ---
 
-**Latest Windows download: 1.0.4-r1.** [Download the Windows x64 installer, quickstart and SHA-256 checksums](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1), or read the [release notes](docs/releases/v1.0.4-r1.md). The installer is unsigned. Access to the trial mini program requires trial membership.
+**Latest Windows download: 1.0.5.** [Download the Windows x64 installer, quickstart and SHA-256 checksums](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.5), or read the [release notes](docs/releases/v1.0.5.md). The installer is unsigned. Access to the trial mini program requires trial membership.
 
 ## What's new in v1.0.5
 

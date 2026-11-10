@@ -43,7 +43,7 @@
 
 ---
 
-**最新 Windows 下载：1.0.4-r1。** [下载 Windows x64 安装包、使用说明和 SHA-256 校验文件](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1)，或查看[发布说明](docs/releases/v1.0.4-r1.md)。安装包未签名；使用小程序体验版时需要体验成员权限。
+**最新 Windows 下载：1.0.5。** [下载 Windows x64 安装包、使用说明和 SHA-256 校验文件](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.5)，或查看[发布说明](docs/releases/v1.0.5.md)。安装包未签名；使用小程序体验版时需要体验成员权限。
 
 <a name="v105"></a>
 ## 1.0.5 更新
