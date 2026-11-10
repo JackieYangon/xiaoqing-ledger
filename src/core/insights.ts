@@ -138,6 +138,86 @@ function boundedDay(month: string, day: number) {
   return `${month}-${String(Math.min(day, monthDays(month))).padStart(2, '0')}`
 }
 
+export interface BudgetUsageRow {
+  key: string
+  name: string
+  category: string
+  limit: number
+  spent: number
+  remaining: number
+  overage: number
+  percent: number
+  fillPercent: number
+}
+
+export interface BudgetUsageMonth {
+  month: string
+  startDate: string
+  endDate: string
+  phase: 'past' | 'current' | 'future'
+  rows: BudgetUsageRow[]
+}
+
+// 预算按月独立；年度视图保留每月限额，不将不同月份合并为新的年度预算。
+export function budgetUsage(
+  entries: Entry[],
+  budgets: LedgerState['budgets'],
+  month: string,
+  period: 'month' | 'year' = 'month',
+  asOf = today(),
+): BudgetUsageMonth[] {
+  checkMonth(month)
+  checkAsOf(asOf)
+  if (period !== 'month' && period !== 'year') throw new Error('统计周期无效')
+  const months = period === 'month'
+    ? [month]
+    : Object.keys(budgets).filter((key) => validMonth(key) && key.startsWith(month.slice(0, 4) + '-')).sort()
+  const selectedMonths = new Set(months)
+  const spending = new Map<string, { total: number; categories: Map<string, number> }>()
+  for (const entry of entries) {
+    const entryMonth = entry.date.slice(0, 7)
+    if (entry.kind !== 'expense' || entry.date > asOf || !selectedMonths.has(entryMonth)) continue
+    let amounts = spending.get(entryMonth)
+    if (!amounts) {
+      amounts = { total: 0, categories: new Map() }
+      spending.set(entryMonth, amounts)
+    }
+    amounts.total += entry.cents
+    amounts.categories.set(entry.category, (amounts.categories.get(entry.category) || 0) + entry.cents)
+  }
+  const result: BudgetUsageMonth[] = []
+  for (const key of months) {
+    const budget = budgets[key]
+    if (!budget) continue
+    const phase = key < asOf.slice(0, 7) ? 'past' : key === asOf.slice(0, 7) ? 'current' : 'future'
+    const amounts = spending.get(key)
+    const rows: BudgetUsageRow[] = []
+    const addRow = (rowKey: string, name: string, category: string, limit: number, spent: number) => {
+      // 零总预算表示未设限；仅展示真实设置的正数限额，避免零除和虚假超支。
+      if (limit <= 0) return
+      const percent = (spent / limit) * 100
+      rows.push({
+        key: rowKey, name, category, limit, spent,
+        remaining: Math.max(0, limit - spent),
+        overage: Math.max(0, spent - limit),
+        percent,
+        fillPercent: Math.min(100, percent),
+      })
+    }
+    addRow('total', '总预算', '', budget.total, amounts?.total || 0)
+    for (const [name, limit] of Object.entries(budget.categories))
+      addRow(`category:${name}`, name, name, limit, amounts?.categories.get(name) || 0)
+    if (rows.length) result.push({
+      month: key,
+      startDate: `${key}-01`,
+      endDate: phase === 'current' ? asOf : lastDay(key),
+      phase,
+      rows,
+    })
+  }
+  return result
+}
+
 /** Current periods compare matching calendar dates; past periods compare complete periods. */
 export function periodReport(
   entries: Entry[],

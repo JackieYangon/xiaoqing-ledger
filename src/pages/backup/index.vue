@@ -14,7 +14,6 @@ import {
   toastError,
   copyText,
   loadError,
-  cloudEnabled,
   syncBusy,
 } from '@/services/ledger'
 const pasted = ref(''),
@@ -87,12 +86,10 @@ function restore() {
   <SessionNotice />
   <template v-if="authenticated">
     <view class="page">
-      <view class="title compact-title">让记录有备份</view>
-      <view class="subtitle">导出一份安心，需要时再恢复。</view>
+      <view class="title compact-title">数据与备份</view>
       <view v-if="loadError" class="error">{{ loadError }}</view>
       <view class="card">
         <view class="section heading">完整备份 · JSON</view>
-        <view class="muted">包含全部账单、分类和预算。复制后粘贴到文本文件保存。</view>
         <button class="primary action" @tap="backup">复制完整备份</button>
       </view>
       <view class="card">
@@ -115,21 +112,17 @@ function restore() {
           </picker>
         </view>
         <view class="muted small tip">
-          共 {{ exportEntries.length }} 笔。复制后保存为 UTF-8 编码 .csv 文件，用 Excel 打开。CSV
-          用于分析，不用于恢复账本。
+          {{ exportEntries.length }} 笔
         </view>
         <button class="secondary action" @tap="csv">复制 CSV 数据</button>
       </view>
       <view class="card">
         <view class="section heading">恢复 JSON 备份</view>
-        <view class="muted small">
-          支持旧版和新版备份。先检查，再合并；不覆盖当前已有账单。导入前建议先备份当前数据。
-        </view>
         <textarea
           v-model="pasted"
           class="backup-input"
           :maxlength="2000000"
-          placeholder="在这里粘贴完整 JSON 备份内容"
+          placeholder="粘贴 JSON 备份"
         />
         <button class="secondary" @tap="check">校验备份</button>
         <view v-if="preview" class="import-summary">
@@ -146,11 +139,6 @@ function restore() {
             确认合并导入
           </button>
         </view>
-      </view>
-      <view class="muted small tip">
-        备份和 CSV 含有你的账单信息，请妥善保管，不要发送给陌生人。{{
-          cloudEnabled ? '恢复操作将合并到当前微信账号的云端账本。' : '网页预览数据仅在本机保存。'
-        }}
       </view>
     </view>
   </template>
@@ -175,14 +163,14 @@ function restore() {
   margin: 24rpx 0;
   padding: 20rpx;
   border-radius: 18rpx;
-  background: #f5f7f2;
+  background: #f5f8f7;
   font-size: 23rpx;
 }
 .import-summary {
   margin-top: 24rpx;
   padding: 22rpx;
   border-radius: 18rpx;
-  background: #edf4e9;
+  background: #edf7f3;
   line-height: 1.8;
 }
 </style>

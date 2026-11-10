@@ -16,7 +16,7 @@ function load(name) {
   return exports
 }
 const { emptyState, createRepository, MAX_CENTS } = load('ledger')
-const { filterEntries, previousMonthBudget, sumCategoryBudget, budgetPace, periodReport } = load('insights')
+const { filterEntries, previousMonthBudget, sumCategoryBudget, budgetPace, budgetUsage, periodReport } = load('insights')
 const plain = (value) => JSON.parse(JSON.stringify(value))
 const entry = (id, date, cents, extra = {}) => ({
   id, date, cents, kind: 'expense', category: '餐饮', note: '', version: 1,
@@ -147,4 +147,77 @@ assert.equal(periodReport([], '2025-12', 'year', '2026-10-28').elapsedDays, 365)
 assert.equal(periodReport([], '2027-01', 'year', '2026-10-28').elapsedDays, 0)
 assert.throws(() => periodReport([], '2026-13', 'month', '2026-10-28'))
 assert.throws(() => periodReport([], '2026-10', 'month', '2026-02-30'))
+
+// 每个预算保留原月份和分类，当前周期排除未来账单，不以年度合计掩盖单月超支。
+const usageEntries = [
+  entry('outside-year', '2025-10-01', 999999),
+  entry('category-only', '2026-02-01', 2500, { category: '已停用' }),
+  entry('month-without-budget', '2026-03-01', 999999),
+  entry('history', '2026-09-30', 500, { category: '旧分类' }),
+  entry('month-first', '2026-10-01', 3000),
+  entry('month-last', '2026-10-28', 1000, { category: '旧分类' }),
+  entry('unbudgeted-category', '2026-10-28', 200, { category: '未设分类' }),
+  entry('income', '2026-10-28', 50000, { kind: 'income' }),
+  entry('tomorrow', '2026-10-29', 999),
+  entry('next-month', '2026-11-01', 999),
+]
+const usageBudgets = {
+  '2025-10': { total: 1, categories: {} },
+  '2026-11': { total: 5000, categories: { 餐饮: 1000 } },
+  '2026-10': { total: 4000, categories: { 餐饮: 2000, 旧分类: 1000, 未使用: 500 } },
+  '2026-08': { total: 0, categories: {} },
+  '2026-02': { total: 0, categories: { 已停用: 1000 } },
+  '2026-09': { total: 8000, categories: { 旧分类: 5000 } },
+  '2027-01': { total: 7000, categories: {} },
+}
+const beforeUsage = JSON.stringify([usageEntries, usageBudgets])
+Object.freeze(usageEntries)
+usageEntries.forEach(Object.freeze)
+Object.values(usageBudgets).forEach((value) => { Object.freeze(value.categories); Object.freeze(value) })
+Object.freeze(usageBudgets)
+const monthlyUsage = budgetUsage(usageEntries, usageBudgets, '2026-10', 'month', '2026-10-28')
+assert.equal(monthlyUsage.length, 1)
+assert.equal(monthlyUsage[0].startDate, '2026-10-01')
+assert.equal(monthlyUsage[0].endDate, '2026-10-28')
+assert.equal(monthlyUsage[0].phase, 'current')
+assert.deepEqual(plain(monthlyUsage[0].rows.map((row) => [row.name, row.limit, row.spent, row.remaining, row.overage, row.percent, row.fillPercent])), [
+  ['总预算', 4000, 4200, 0, 200, 105, 100],
+  ['餐饮', 2000, 3000, 0, 1000, 150, 100],
+  ['旧分类', 1000, 1000, 0, 0, 100, 100],
+  ['未使用', 500, 0, 500, 0, 0, 0],
+])
+const annualUsage = budgetUsage(usageEntries, usageBudgets, '2026-12', 'year', '2026-10-28')
+assert.deepEqual(plain(annualUsage.map((item) => item.month)), ['2026-02', '2026-09', '2026-10', '2026-11'])
+assert.equal(annualUsage[0].rows.length, 1, '未设总额时保留独立分类预算')
+assert.equal(annualUsage[0].rows[0].name, '已停用', '历史分类预算不依赖当前可选分类')
+assert.equal(annualUsage[0].rows[0].overage, 1500)
+assert.equal(annualUsage[0].rows[0].percent, 250)
+assert.equal(annualUsage[0].endDate, '2026-02-28')
+assert.equal(annualUsage[1].endDate, '2026-09-30')
+assert.deepEqual(plain(annualUsage[2]), plain(monthlyUsage[0]), '年度视图保留同一月的真实使用情况')
+assert.equal(annualUsage[3].phase, 'future')
+assert.equal(annualUsage[3].rows[0].spent, 0)
+assert.equal(annualUsage[3].rows[0].remaining, 5000)
+for (const group of annualUsage.filter((item) => item.phase !== 'future')) {
+  for (const row of group.rows) {
+    const matching = filterEntries(usageEntries, {
+      startDate: group.startDate, endDate: group.endDate, kind: 'expense', category: row.category,
+    })
+    assert.equal(matching.reduce((sum, item) => sum + item.cents, 0), row.spent,
+      '预算图与点击后的日期/分类筛选使用同一口径')
+  }
+}
+assert.equal(budgetUsage(usageEntries, usageBudgets, '2026-07', 'month', '2026-10-28').length, 0)
+assert.equal(budgetUsage(usageEntries, usageBudgets, '2026-08', 'month', '2026-10-28').length, 0)
+assert.equal(budgetUsage(usageEntries, {}, '2026-10', 'year', '2026-10-28').length, 0)
+assert.equal(budgetUsage(usageEntries, usageBudgets, '2027-01', 'year', '2026-10-28')[0].rows[0].spent, 0)
+const closedYear = budgetUsage(usageEntries, usageBudgets, '2026-01', 'year', '2027-01-01')
+assert.equal(closedYear[2].rows[0].spent, 5199, '已结束月份包含整月账单')
+assert.equal(closedYear[2].endDate, '2026-10-31')
+assert.equal(closedYear[3].rows[0].spent, 999)
+assert.equal(budgetUsage([], { '2024-02': { total: 1, categories: {} } }, '2024-02', 'month', '2026-10-28')[0].endDate, '2024-02-29')
+assert.equal(JSON.stringify([usageEntries, usageBudgets]), beforeUsage, '统计计算不修改账单或已保存预算')
+assert.throws(() => budgetUsage([], {}, '2026-13', 'month', '2026-10-28'))
+assert.throws(() => budgetUsage([], {}, '2026-10', 'week', '2026-10-28'))
+assert.throws(() => budgetUsage([], {}, '2026-10', 'year', '2026-02-30'))
 console.log('PASS: inclusive cross-month filters, stable sorting, budget drafts and storage protection, daily allowance, equal-progress comparisons, leap days and future records')

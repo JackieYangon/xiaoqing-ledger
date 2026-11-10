@@ -225,22 +225,29 @@ async function checkMiniRecordsAndStats() {
   page.sort.value = 'date-asc'
   assert.deepEqual(plain(page.groups.value.map((group) => group.date)), ['2026-10-01', '2026-10-28'])
 
-  // Drill through the actual stats handler into the records onShow hook with stale filters set.
+  // 预算图点击进入对应月份的支出明细，并清除旧筛选。
   const stats = setupPage('src/pages/stats/index.vue', env)
   assert.equal(stats.page.report.value.current.expense, 3500, 'current insights exclude future bills')
+  const beforeBudgetView = env.raw()
+  assert.equal(stats.page.budgetMonths.value[0].rows[0].spent, 3500)
+  assert.equal(stats.page.budgetMonths.value[0].rows[0].remaining, 6500)
   page.query.value = '不匹配'
   page.kind.value = 'income'
   page.minAmount.value = '999'
   page.sort.value = 'amount-asc'
   page.view.value = 'calendar'
   page.day.value = '2026-10-29'
-  stats.page.drill('餐饮')
+  stats.page.kind.value = 'income'
+  const october = stats.page.budgetMonths.value[0]
+  stats.page.drillBudget(october, october.rows[0])
   assert.equal(env.calls.routes.at(-1), '/pages/records/index')
   records.hooks.show[0]()
   await settle()
   assert.equal(env.service.recordFilter.value, null)
   assert.equal(page.startDate.value, '2026-10-01')
   assert.equal(page.endDate.value, '2026-10-28')
+  assert.equal(page.kind.value, 'expense', '切换收入趋势不改变预算的支出口径')
+  assert.equal(page.category.value, '', '总预算明细包含所有支出分类')
   assert.equal(page.query.value, '')
   assert.equal(page.minAmount.value, '')
   assert.equal(page.maxAmount.value, '')
@@ -250,12 +257,26 @@ async function checkMiniRecordsAndStats() {
   assert.deepEqual(plain(page.filtered.value.map((e) => e.id)), ['today', 'first'])
 
   stats.page.changePeriod('year')
-  stats.page.drill('旧分类')
+  assert.deepEqual(plain(stats.page.budgetMonths.value.map((group) => group.month)), ['2026-09', '2026-10'])
+  const september = stats.page.budgetMonths.value[0]
+  stats.page.drillBudget(september, september.rows.find((row) => row.category === '旧分类'))
   records.hooks.show[0]()
   await settle()
-  assert.equal(page.startDate.value, '2026-01-01')
-  assert.equal(page.endDate.value, '2026-10-28')
+  assert.equal(page.startDate.value, '2026-09-01')
+  assert.equal(page.endDate.value, '2026-09-30')
   assert.deepEqual(plain(page.filtered.value.map((e) => e.id)), ['old'])
+  assert.equal(env.raw(), beforeBudgetView, '切换和点击预算图不修改已存账本')
+
+  env.remoteBudget('2026-11', { total: 9000, categories: { 餐饮: 4000 } })
+  const november = stats.page.budgetMonths.value.find((group) => group.month === '2026-11')
+  assert.equal(november.phase, 'future')
+  assert.equal(november.rows[0].spent, 0)
+  const routeCount = env.calls.routes.length
+  stats.page.drillBudget(november, november.rows[0])
+  assert.equal(env.calls.routes.length, routeCount, '未开始月份不打开与零使用额不一致的未来账单')
+  stats.page.changePeriod('month')
+  stats.page.changeMonth({ detail: { value: '2026-08' } })
+  assert.equal(stats.page.budgetMonths.value.length, 0, '未设置预算显示空状态')
 
   page.changeView('calendar')
   assert.equal(page.rangeMode.value, 'month')

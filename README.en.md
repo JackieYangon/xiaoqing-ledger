@@ -3,7 +3,7 @@
 <p align="center"><b>Record daily spending. Keep your books in sync.</b><br />A WeChat bookkeeping mini program built with uni-app, Vue 3 and TypeScript.</p>
 <p align="center"><a href="README.md">简体中文</a> · <b>English</b> · <a href="docs/releases/v1.0.4-r1.md">v1.0.4-r1 release notes</a></p>
 <p align="center">
-  <a href="#whats-new-in-v104-r1"><img src="https://img.shields.io/badge/version-1.0.4--r1-237859?style=flat-square" alt="Version 1.0.4-r1" /></a>
+  <a href="#whats-new-in-v105"><img src="https://img.shields.io/badge/version-1.0.5-237859?style=flat-square" alt="Version 1.0.5" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT" /></a>
   <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/"><img src="https://img.shields.io/badge/WeChat-Mini_Program-07C160?style=flat-square&amp;logo=wechat&amp;logoColor=white" alt="WeChat" /></a>
   <a href="https://uniapp.dcloud.net.cn/"><img src="https://img.shields.io/badge/framework-uni--app-2B9939?style=flat-square" alt="uni-app" /></a>
@@ -11,16 +11,16 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" alt="TypeScript" /></a>
 </p>
 <p align="center"><a href="#screenshots">Screenshots</a> · <a href="#demo">Live demo GIF</a> · <a href="#features">Features</a> · <a href="#getting-started">Getting started</a> · <a href="#deploying-cloud-development">Cloud deployment</a></p>
-<p align="center">Version 1.0.4-r1 · Local setup fixes · Correct build paths · Sign-in recovery</p>
+<p align="center">Version 1.0.5 · Refreshed interface · Budget usage bars</p>
 
 <a name="screenshots"></a>
 <h2 align="center">A look inside</h2>
-<p align="center">Explore first and choose when to sign in. Preview the sign-in, category and recurring schedule pages below.</p>
+<p align="center">Mobile-sized H5 screenshots of the 1.0.5 sample ledger.</p>
 <table align="center" width="100%">
   <tr>
-    <td width="33%" align="center" valign="top"><h3>Optional sign-in</h3><img src="docs/images/login.png" width="220" alt="Xiaoqing Ledger sign-in page" /><p>Explore first, then sign in to access your cloud ledger.</p></td>
-    <td width="33%" align="center" valign="top"><h3>Category management</h3><img src="docs/images/categories.png" width="220" alt="Category management" /><p>Rename or delete any category.</p></td>
-    <td width="33%" align="center" valign="top"><h3>Recurring schedules</h3><img src="docs/images/recurring.png" width="220" alt="Recurring schedules" /><p>Choose a monthly date in one tap.</p></td>
+    <td width="33%" align="center" valign="top"><h3>Home overview</h3><img src="docs/images/v1.0.5-home.png" width="220" alt="1.0.5 H5 home preview with the sample ledger" /><p>Monthly income, expenses, budget and recent records.</p></td>
+    <td width="33%" align="center" valign="top"><h3>Transaction records</h3><img src="docs/images/v1.0.5-records.png" width="220" alt="1.0.5 H5 transaction records preview" /><p>Filters, search and a calendar view.</p></td>
+    <td width="33%" align="center" valign="top"><h3>Budget usage</h3><img src="docs/images/v1.0.5-budgets.png" width="220" alt="1.0.5 H5 statistics budget bars preview" /><p>Spending, remaining funds and overspending for each budget.</p></td>
   </tr>
 </table>
 
@@ -28,7 +28,7 @@
 <h2 align="center">Choose a day. Repeat every month.</h2>
 <table align="center" width="100%">
   <tr>
-    <td width="36%" align="center" valign="middle"><img src="docs/images/recurring-selection.gif" width="260" alt="Selecting monthly recurring dates" /><br /><sub>Monthly day selection</sub></td>
+    <td width="36%" align="center" valign="middle"><img src="docs/images/recurring-selection.gif" width="260" alt="Monthly recurring date selection in an earlier version" /><br /><sub>Monthly day selection in an earlier version</sub></td>
     <td width="64%" valign="top">
 <h3>Set a schedule in three steps</h3>
 <ol><li><b>Choose a cycle</b><br />Monthly or weekly, for recurring expenses such as rent or subscriptions.</li><li><b>Select the date</b><br />Tap 1–31 in the monthly grid. Dates beyond the month length use its last day.</li><li><b>Enter the amount and category</b><br />Create the rule; the cloud scheduler checks due rules every five minutes after its trigger is deployed.</li></ol>
@@ -39,25 +39,20 @@
     </td>
   </tr>
 </table>
-<p align="center"><sub>Actual mini program screenshots; the GIF plays captured selection steps with pauses. No records were created or deleted.</sub></p>
-
-The interface is currently in Simplified Chinese; this README provides English setup and usage instructions. Media excludes personal profiles, transaction details, invitation codes and deployment identifiers. Files in `docs/images/` are not included in the mini program package.
+The interface is in Simplified Chinese; this README provides English setup and usage instructions.
 
 ---
 
-**Release status: Release (Latest).** See the [v1.0.4-r1 release notes](docs/releases/v1.0.4-r1.md) for the retained local configuration/build-directory fixes, sign-in recovery and installation instructions.
+**Latest Windows download: 1.0.4-r1.** [Download the Windows x64 installer, quickstart and SHA-256 checksums](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1), or read the [release notes](docs/releases/v1.0.4-r1.md). The installer is unsigned. Access to the trial mini program requires trial membership.
 
-The Windows x64 installer, quickstart and SHA-256 checksums are listed with the [v1.0.4-r1 Release](https://github.com/JackieYangon/xiaoqing-ledger/releases/tag/v1.0.4-r1). The unsigned installer passed its build and static payload checks; actual installation and complete QR sign-in acceptance have not been performed. Trial mini program access requires the corresponding membership. The earlier [v1.0.4 release](docs/releases/v1.0.4.md) contains source only, without a desktop installer.
+## What's new in v1.0.5
 
-During the earlier v1.0.4 checks on 2026-11-02, simulator sign-in displayed the personal account and synchronized cloud status for an empty ledger. Physical-device and multi-account acceptance were not performed. Revision r1 retains the same backend authentication logic and has separate version checks and mini program/desktop builds. Publishing the repository is separate from uploading the mini program, submitting it for review or making it public.
+- A consistent green theme, cards, spacing and numeric hierarchy refresh the mini program's home, records, statistics and profile pages.
+- Static explanatory prose is removed across the mini program, while action labels, necessary status messages, validation and confirmations remain.
+- Horizontal total-budget and category-budget usage bars replace category rankings and the five largest entries on the mini program statistics page. Rows show limits, spending, remaining amounts or overspending, retaining the actual percentage when over budget.
+- Yearly budget views preserve each month's limits without creating an annual budget. The current month counts through today; future months are marked as not started. Budget rows for started months open the matching expense records.
 
-## What's new in v1.0.4-r1
-
-- Development and production builds now set the repository's mini program directory to the output they actually generate, resolving the missing `app.json` error when importing the repository root.
-- Setup and type checks preserve the selected development or production directory.
-- Local configuration generation preserves an existing AppID when no replacement is supplied. Invalid arguments, identifiers or malformed configuration files fail before generated configuration is written.
-- Upload preparation requires both an AppID and a cloud environment, preventing a guest-only build from being prepared as an account-enabled release. Ordinary builds still support guest previews.
-- The [sign-in troubleshooting guide](#sign-in-troubleshooting) explains how to rebuild with local deployment settings and refresh a stale compilation cache while preserving user data.
+See [missing app.json troubleshooting](#missing-appjson-at-the-project-root) and [sign-in troubleshooting](#sign-in-troubleshooting) for setup issues.
 
 ## Features
 
@@ -69,7 +64,7 @@ During the earlier v1.0.4 checks on 2026-11-02, simulator sign-in displayed the 
 - **Fast entry:** income and expense categories, arithmetic amounts such as `18.5+6-2`, a numeric keypad, note suggestions, and save-and-add-another. Existing records can be copied as new entries.
 - **Records and calendar:** combine monthly, custom-date or all-date views with type, historical category, keyword and inclusive amount filters. Search categories, notes and authors; sort by date or amount and export filtered CSV. Calendar totals support backdated entry. The mini program and desktop share the filtering rules.
 - **Budgets:** monthly total and category budgets, remaining amounts and overspending indicators on both clients. Copy the previous month's budget into a draft or fill the total from category limits, then save explicitly. Historical categories are retained. Daily allowance divides the remaining total by days left including today; future months use the full month and past months have no daily allowance.
-- **Statistics:** monthly/yearly summaries, trends, category rankings and largest entries on both clients, with savings rate, daily average expenses and days without recorded expenses. Current periods compare through today's calendar date against the corresponding date in the previous period, clamped at month end; historical periods compare complete periods. Future-dated entries are excluded from current-period statistics. Savings rate is undefined without income; a day without recorded expenses does not establish that no spending occurred. Hiding amounts affects the home page only.
+- **Statistics:** monthly/yearly summaries and trends, savings rate, daily average expenses and days without recorded expenses. The mini program shows horizontal usage bars for monthly total and category budgets with links to matching expense records; desktop statistics retain category rankings and the five largest entries. Current periods compare through today's calendar date against the corresponding date in the previous period, clamped at month end; historical periods compare complete periods. Future-dated entries are excluded from current-period statistics. Savings rate is undefined without income; a day without recorded expenses does not establish that no spending occurred. Hiding amounts affects the home page only.
 - **Editable categories:** every category can be renamed or deleted, including the initial categories. Up to 50 categories per income/expense type. Historical entries and existing category budgets retain their original labels. Renaming updates recurring rules; deletion pauses affected rules. Empty category lists remain empty until a category is added.
 - **Recurring records:** weekly or monthly schedules, with a 1–31 day grid for monthly rules. Short months use the last day for dates beyond their length. Rules use Beijing time and do not backfill periods before creation. This creates bookkeeping entries, **not actual payments**. Up to 50 rules per ledger.
 - **Explicit deduplication:** link a manual expense to its recurring rule. Only one entry is kept per book/rule/period. A manual entry prevents automatic creation; a later manual entry updates an automatically generated one. Unlinked entries are not deduplicated by guessing from amount or category.
@@ -108,7 +103,7 @@ Windows shortcuts are also available:
 .\dev.ps1 -Target h5
 ```
 
-The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 supports guest browsing and sample-ledger edits for the current app session, but does not support account sign-in or access to cloud ledgers. A Windows desktop installer is available; QR sign-in depends on a separately configured HTTPS gateway, and complete real-device acceptance testing remains outstanding.
+The helper uses pnpm from PATH, with a fallback to the local Codex runtime if available; it does not modify system environment variables. H5 supports guest browsing and sample-ledger edits for the current app session, but does not support account sign-in or access to cloud ledgers. A Windows desktop installer is available; QR sign-in depends on a separately configured HTTPS gateway.
 
 ## Checks and builds
 
@@ -122,6 +117,8 @@ pnpm build:h5
 Production output is written to `dist/build/mp-weixin` and `dist/build/h5`. Do not edit generated files. The mini program build automatically checks that the main package is below 1,500,000 bytes, component injection is enabled with `requiredComponents`, and each image/audio asset is at most 200,000 bytes. WeChat Developer Tools remains the final authority for its upload checks.
 
 The mini program build also sets the root project's `miniprogramRoot` to `dist/build/mp-weixin/`, so the repository root can be imported for preview after a successful build. Running `pnpm dev:mp-weixin` switches it back to `dist/dev/mp-weixin/`. Setup and type checks preserve the selected directory.
+
+### Missing app.json at the project root
 
 If the project reports a missing `app.json`, run `pnpm install --frozen-lockfile` followed by `pnpm build:mp-weixin` in the directory containing `package.json`. Confirm that `dist/build/mp-weixin/app.json` exists, then reopen the project and compile. `setup:local` repairs configuration only; it does not generate the mini program. Do not create an empty `app.json` by hand.
 
@@ -219,8 +216,6 @@ For trial testing, upload the mini program containing that page, make it availab
 
 Configure gateway rate limits and quotas for unauthenticated requests. The function's additional global code-generation limits are 30 requests per minute and 500 per day, using UTC windows; these do not replace gateway protection. Gateway failures return the operation stage and numeric error code rather than raw platform error text or credentials.
 
-Desktop acceptance testing still requires two real devices and two accounts. Check confirmation, cancellation, expiry, replay protection, account and group isolation, duplicate-write prevention, recovery after network interruption, sign-out and compatibility with existing mini program records. Automated tests do not establish complete desktop or production acceptance.
-
 ## Project structure
 
 | Path | Purpose |
@@ -236,10 +231,10 @@ Desktop acceptance testing still requires two real devices and two accounts. Che
 | `tests/` | Data integrity, cloud isolation, authentication and feature tests |
 | `docs/images/` | Public README screenshots and GIF |
 
-Database tests use a mock and do not replace real-device/cloud acceptance tests. The initial scaffold comes from [uni-preset-vue/vite-ts](https://github.com/dcloudio/uni-preset-vue/tree/vite-ts). Navigation PNGs are committed; regenerate them with `python scripts/build-icons.py` in a Python environment with Pillow installed.
+The initial scaffold comes from [uni-preset-vue/vite-ts](https://github.com/dcloudio/uni-preset-vue/tree/vite-ts). Navigation PNGs are committed; regenerate them with `python scripts/build-icons.py` in a Python environment with Pillow installed.
 
 ## License
 
 Original project code is licensed under [MIT](LICENSE). Preserve its copyright and license notice when redistributing the software or substantial portions of it. The software is provided without warranty.
 
-Third-party dependencies retain their own licenses: the direct uni-app packages use Apache-2.0; Vue, vue-i18n and wx-server-sdk use MIT. Preserve their applicable notices and license texts when distributing third-party code. The project continues to use MIT for simplicity; Apache-2.0 dependencies do not by themselves require relicensing the original application code. Neither this license nor public source availability grants access to user data.
+Third-party dependencies retain their own licenses: the direct uni-app packages use Apache-2.0; Vue, vue-i18n and wx-server-sdk use MIT. Preserve their applicable notices and license texts when distributing third-party code. Neither this license nor public source availability grants access to user data.

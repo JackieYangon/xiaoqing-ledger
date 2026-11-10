@@ -4,7 +4,6 @@ import { useProtectedPage, ensureSession } from '@/services/auth'
 const { authenticated, currentUserLabel } = useProtectedPage()
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { CLOUD_ENV } from '@/config/cloud'
 import {
   cloudEnabled,
   isGroup,
@@ -116,21 +115,13 @@ function discard() {
   <SessionNotice />
   <template v-if="authenticated">
     <view class="page">
-      <view class="title compact-title">记录，随你而行</view>
-      <view class="subtitle">同一个微信账号，连接同一份云端账本。</view>
+      <view class="title compact-title">云同步</view>
       <view class="card">
         <view class="row">
           <text>当前状态</text>
           <text class="badge">{{ storageLabel }}</text>
         </view>
-        <view class="detail muted">
-          {{
-            cloudEnabled
-              ? '云端保存成功后，换手机可用同一个微信账号读取。'
-              : '网页是独立的本地预览，不连接微信云端账本。'
-          }}
-        </view>
-        <view v-if="cloudEnabled" class="muted small">
+        <view v-if="cloudEnabled" class="muted small detail">
           {{ currentBookName }} · 账号标识 {{ accountHint }} · 云端 {{ entries.length }} 笔
         </view>
         <view v-if="lastSync" class="muted small">最近同步 {{ lastSync }}</view>
@@ -146,9 +137,6 @@ function discard() {
       </view>
       <view v-if="pendingOperation" class="card">
         <view class="section heading">有一项操作等待确认</view>
-        <view class="muted small">
-          网络中断时，云端可能已经收到请求。请先同步确认，避免重复记账。未确认前不会继续提交新操作。
-        </view>
         <button class="secondary action" @tap="copyText(pendingText())">复制待确认内容</button>
         <button v-if="canDiscardPending" class="danger" @tap="discard">保存草稿并停止重试</button>
       </view>
@@ -156,8 +144,7 @@ function discard() {
         <view class="section heading">迁移旧版本地账本</view>
         <view v-if="localError" class="error">{{ localError }}</view>
         <view v-else class="muted">
-          当前设备原有
-          {{ localCount }} 笔本地记录。迁移需要你确认账号，重复记录会跳过，原数据保持不变。
+          本地记录 {{ localCount }} 笔
         </view>
         <button class="secondary action" @tap="backupLocal">先复制本地备份</button>
         <button
@@ -169,13 +156,6 @@ function discard() {
         >
           {{ isGroup ? '请先切换个人账本' : '确认迁移到个人账本' }}
         </button>
-      </view>
-      <view class="card">
-        <view class="section heading">使用说明</view>
-        <view class="muted small">
-          账单、分类和预算通过微信身份隔离。网络不可用时不能确认云端保存；未完成的操作会保留请求以便重试。进入页面会拉取云端最新记录，不是实时推送。云端仍建议定期导出备份。
-        </view>
-        <view class="muted small detail">环境：{{ CLOUD_ENV }}</view>
       </view>
     </view>
   </template>

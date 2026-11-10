@@ -3,30 +3,28 @@ import { guestMode, toLogin, authError } from '@/services/auth'
 </script>
 <template>
   <view v-if="guestMode" class="guest-notice">
-    <view class="guest-title">游客体验 · 示例账本</view>
-    <view class="muted small">
-      可试记、筛选账单和查看统计。体验修改仅在本次打开期间保留，不会写入正式账本。
+    <view class="guest-row">
+      <text class="guest-title">示例账本</text>
+      <button class="text-btn guest-login" @tap="toLogin">登录 ›</button>
     </view>
-    <button class="text-btn guest-login" @tap="toLogin">登录我的账本 ›</button>
     <view v-if="authError" class="error small">{{ authError }}</view>
   </view>
 </template>
 <style scoped>
 .guest-notice {
-  padding: 24rpx;
-  margin-bottom: 28rpx;
-  border-radius: 20rpx;
-  background: #eaf2e8;
+  padding: 8rpx 20rpx;
+  margin-bottom: 24rpx;
+  border-radius: 18rpx;
+  background: #e8f3ee;
 }
+.guest-row { display: flex; align-items: center; justify-content: space-between; }
 .guest-title {
   color: #267858;
   font-size: 25rpx;
   font-weight: 600;
-  margin-bottom: 8rpx;
 }
 .guest-login {
-  margin-top: 10rpx;
   padding: 0;
-  text-align: left;
+  font-size: 23rpx;
 }
 </style>

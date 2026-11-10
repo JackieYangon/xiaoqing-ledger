@@ -76,12 +76,11 @@ async function save() {
   <SessionNotice />
   <view v-if="authenticated" class="page">
     <view class="title">我的资料</view>
-    <view class="subtitle">头像和昵称均可选填，不影响记账功能。</view>
     <view class="card">
       <button class="avatar-button" open-type="chooseAvatar" @chooseavatar="chooseAvatar">
         <image :src="avatar || '/static/avatar.png'" mode="aspectFill" />
       </button>
-      <view class="muted small centered">头像选填，点击选择图片</view>
+      <view class="muted small centered">头像（选填）</view>
       <view class="field">
         <text class="label">昵称（选填）</text>
         <input
@@ -89,13 +88,13 @@ async function save() {
           type="nickname"
           maxlength="24"
           class="input"
-          placeholder="填写你希望展示的昵称"
+          placeholder="昵称"
           @blur="nickname"
         />
       </view>
       <button class="primary" :disabled="busy" :loading="busy" @tap="save">保存资料</button>
       <view class="muted small notice">
-        仅在你主动选择并确认后保存，用于个人展示和群组账单的记账人信息；也可以保留默认资料。
+        保存后用于个人及群组记账人展示。
       </view>
     </view>
   </view>

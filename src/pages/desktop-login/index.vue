@@ -32,7 +32,7 @@ async function decide(decision: 'approve' | 'deny') {
     })
     if (!result.ok) throw new Error(result.message || '请求已失效')
     finished.value =
-      decision === 'approve' ? '已确认电脑登录。请回到电脑继续操作。' : '已取消电脑登录。'
+      decision === 'approve' ? '已确认电脑登录' : '已取消电脑登录'
   } catch (e) {
     finished.value = e instanceof Error ? e.message : '确认失败，请重新扫码'
   } finally {
@@ -48,10 +48,10 @@ async function decide(decision: 'approve' | 'deny') {
       <template v-if="!finished">
         <view class="section">{{ currentUserLabel }}</view>
         <view class="muted">
-          请确认这是你正在操作的电脑。确认后，电脑将能访问你的个人账本及已加入的群组账本。
+          确认后，此电脑可访问你的个人及群组账本。
         </view>
         <view class="code">{{ pairingCode }}</view>
-        <view class="muted">请核对电脑上显示的六位数字。数字不一致或不是你本人操作，请取消。</view>
+        <view class="muted">请核对电脑上的数字。非本人操作或数字不一致，请取消。</view>
         <button
           class="primary action"
           :loading="busy"
@@ -78,7 +78,7 @@ async function decide(decision: 'approve' | 'deny') {
   font-weight: 700;
   letter-spacing: 12rpx;
   margin: 36rpx 0;
-  color: #267858;
+  color: #16846b;
 }
 .action {
   margin-top: 24rpx;

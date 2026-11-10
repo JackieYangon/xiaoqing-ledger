@@ -145,16 +145,16 @@ watch(currentBookId, () => {
   <template v-if="browseReady">
   <view class="page">
     <GuestNotice />
-    <view class="row">
+    <view class="page-header">
       <view class="title compact-title">收支明细</view>
-      <button class="text-btn" @tap="openEntry(undefined, day || undefined)">＋ 记一笔</button>
+      <button class="primary compact-action" @tap="openEntry(undefined, day || undefined)">＋ 记一笔</button>
     </view>
     <view class="row">
       <picker v-if="rangeMode === 'month'" mode="date" fields="month" :value="month" @change="selectMonth">
         <view class="badge">{{ month }} ▾</view>
       </picker>
       <text v-else class="badge">{{ rangeMode === 'all' ? '全部日期' : '日期范围' }}</text>
-      <view class="chips">
+      <view class="chips view-switch">
         <view class="chip" :class="{ active: view === 'list' }" @tap="changeView('list')">明细</view>
         <view class="chip" :class="{ active: view === 'calendar' }" @tap="changeView('calendar')">
           日历
@@ -162,7 +162,13 @@ watch(currentBookId, () => {
       </view>
     </view>
     <view v-if="loadError" class="error">{{ loadError }}</view>
-    <input v-model="query" class="input search" placeholder="搜索分类、备注或记账人" maxlength="100" />
+    <view v-if="!result.error" class="record-totals">
+      <view><text class="total-label">支出</text><view class="total-value">{{ money(total.expense) }}</view></view>
+      <view><text class="total-label">收入</text><view class="total-value income">{{ money(total.income) }}</view></view>
+      <view><text class="total-label">笔数</text><view class="total-value">{{ filtered.length }}</view></view>
+    </view>
+    <view class="card filter-panel">
+    <input v-model="query" class="input search" placeholder="搜索账单" maxlength="100" />
     <view class="row filters">
       <view class="chips">
         <view
@@ -199,7 +205,7 @@ watch(currentBookId, () => {
           <view class="input date-input">{{ endDate || '结束日期' }} ▾</view>
         </picker>
       </view>
-      <text class="label amount-label">金额范围（元，含边界，留空不限）</text>
+      <text class="label amount-label">金额范围（元）</text>
       <view class="range-inputs">
         <input v-model="minAmount" class="input" type="digit" maxlength="11" placeholder="最低金额" />
         <text class="muted small">至</text>
@@ -211,6 +217,7 @@ watch(currentBookId, () => {
           <text class="filter-category">{{ sortOptions[sortValues.indexOf(sort)] }} ▾</text>
         </picker>
       </view>
+    </view>
     </view>
     <view v-if="result.error" class="error">{{ result.error }}</view>
     <view v-if="view === 'calendar' && !result.error" class="card calendar">
@@ -232,19 +239,17 @@ watch(currentBookId, () => {
           <text v-if="cell.income" class="day-income">+{{ compact(cell.income) }}</text>
         </view>
       </view>
-      <view class="row calendar-footer">
-        <text class="muted small">{{ day || '点击日期查看当天账单' }}</text>
-        <button v-if="day" class="text-btn" @tap="openEntry(undefined, day)">补记当天</button>
+      <view v-if="day" class="row calendar-footer">
+        <text class="muted small">{{ day }}</text>
+        <button class="text-btn" @tap="openEntry(undefined, day)">补记当天</button>
       </view>
     </view>
-    <view v-if="!result.error" class="muted summary">
-      <view>{{ rangeLabel }}{{ day && view === 'calendar' ? ' · ' + day : '' }} · {{ sortOptions[sortValues.indexOf(sort)] }}</view>
-      <view>{{ filtered.length }} 笔 · 收入 {{ money(total.income) }} · 支出 {{ money(total.expense) }}</view>
-      <button class="text-btn export" :disabled="!filtered.length" @tap="exportFiltered">复制筛选结果 CSV</button>
+    <view v-if="!result.error" class="row summary">
+      <text class="muted small">{{ day && view === 'calendar' ? day : rangeLabel }}</text>
+      <button class="text-btn export" :disabled="!filtered.length" @tap="exportFiltered">复制 CSV</button>
     </view>
     <view v-if="!result.error && !filtered.length" class="card empty">
-      没有符合条件的账单
-      <view class="small">换个筛选条件，或记下新的一笔</view>
+      暂无账单
     </view>
     <view v-if="!result.error && amountSorted && filtered.length" class="card day-group">
       <view v-for="entry in filtered" :key="entry.id" class="sorted-entry">
@@ -270,19 +275,35 @@ watch(currentBookId, () => {
 .compact-title {
   font-size: 40rpx;
 }
+.compact-action { padding: 4rpx 20rpx; border-radius: 18rpx; font-size: 24rpx; line-height: 2; }
+.view-switch { gap: 4rpx; padding: 5rpx; border-radius: 22rpx; background: #e9eeef; }
+.view-switch .chip { padding: 9rpx 20rpx; background: transparent; font-size: 24rpx; }
+.view-switch .chip.active { background: #fff; color: #16846b; box-shadow: 0 3rpx 10rpx #234d3710; }
+.record-totals { display: grid; grid-template-columns: 1fr 1fr .65fr; gap: 16rpx; margin-top: 24rpx; padding: 28rpx 24rpx; border-radius: 28rpx; background: #fff; }
+.record-totals > view { min-width: 0; }
+.record-totals > view + view { padding-left: 18rpx; border-left: 1rpx solid #edf1f0; }
+.total-label { color: #82928b; font-size: 23rpx; }
+.total-value { margin-top: 8rpx; font-size: 33rpx; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.filter-panel { padding: 22rpx; }
 .search {
-  margin: 24rpx 0;
-  background: #fff;
-  border: 1rpx solid #e5ece2;
+  margin: 0 0 22rpx;
+  height: 78rpx;
+  background: #f5f7f8;
+  border: 0;
 }
 .filters {
   flex-wrap: wrap;
 }
 .advanced-actions {
-  margin-top: 18rpx;
+  margin-top: 14rpx;
 }
 .advanced {
-  margin-top: 8rpx;
+  margin-top: 12rpx;
+  padding: 22rpx 0 4rpx;
+  border: 0;
+  border-top: 1rpx solid #edf1f0;
+  border-radius: 0;
+  box-shadow: none;
 }
 .range-inputs {
   display: grid;
@@ -309,9 +330,7 @@ watch(currentBookId, () => {
   margin-bottom: 0;
 }
 .export {
-  display: inline-block;
-  padding-left: 0;
-  margin-top: 10rpx;
+  padding-right: 0;
 }
 .sorted-entry {
   padding-top: 16rpx;
@@ -322,7 +341,7 @@ watch(currentBookId, () => {
   color: #267858;
 }
 .summary {
-  margin-top: 24rpx;
+  margin: 24rpx 4rpx 0;
   font-size: 23rpx;
 }
 .day-title {
@@ -331,6 +350,7 @@ watch(currentBookId, () => {
   font-size: 25rpx;
 }
 .day-group {
+  margin-top: 18rpx;
   padding-bottom: 8rpx;
 }
 .week,
@@ -360,8 +380,8 @@ watch(currentBookId, () => {
   font-weight: 600;
 }
 .day.selected {
-  background: #e4efdc;
-  box-shadow: inset 0 0 0 2rpx #80a77d;
+  background: #e6f3ed;
+  box-shadow: inset 0 0 0 2rpx #67b699;
 }
 .day-expense,
 .day-income {

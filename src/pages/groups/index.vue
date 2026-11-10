@@ -124,8 +124,7 @@ async function leave() {
 <template>
   <SessionNotice />
   <view v-if="authenticated" class="page">
-    <view class="title">一起记账</view>
-    <view class="subtitle">个人账本保持私密，群组账单共同可见。</view>
+    <view class="title">群组与账本</view>
     <view class="card">
       <view class="section heading">切换账本</view>
       <button :class="!currentBookId ? 'primary' : 'secondary'" :disabled="busy" @tap="select('')">
@@ -144,7 +143,6 @@ async function leave() {
     </view>
     <view v-if="selected" class="card">
       <view class="section heading">{{ selected.name }}</view>
-      <view class="muted small">成员可查看共享账单、记录自己的消费；群主管理共享预算和分类。</view>
       <button class="secondary book" @tap="showMembers">查看成员</button>
       <view v-for="m in members" :key="m.id" class="member">
         <image :src="m.avatar || '/static/avatar.png'" mode="aspectFill" />
@@ -156,7 +154,7 @@ async function leave() {
         </button>
         <view v-if="invite" class="invite">
           <view class="code">{{ invite }}</view>
-          <view class="muted small">有效期 7 天，重新生成后旧邀请失效。</view>
+          <view class="muted small">有效期 7 天</view>
           <button class="primary book" open-type="share">分享给微信好友</button>
           <button class="text-btn" @tap="copyText(invite)">复制邀请码</button>
         </view>
@@ -173,7 +171,7 @@ async function leave() {
     </view>
     <view class="card">
       <view class="section heading">加入群组</view>
-      <input v-model="code" class="input" maxlength="16" placeholder="填写好友发来的 16 位邀请码" />
+      <input v-model="code" class="input" maxlength="16" placeholder="16 位邀请码" />
       <view class="muted small notice">
         确认加入后，你主动记入该群组的账单会对成员可见，个人账单不会共享。
       </view>
@@ -181,7 +179,7 @@ async function leave() {
     </view>
     <view class="card">
       <view class="section heading">创建群组</view>
-      <input v-model="name" class="input" maxlength="24" placeholder="例如：家庭日常" />
+      <input v-model="name" class="input" maxlength="24" placeholder="群组名称" />
       <button class="secondary book" :disabled="busy" @tap="create">创建并切换</button>
     </view>
   </view>

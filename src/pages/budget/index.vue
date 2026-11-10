@@ -166,12 +166,12 @@ function spent(name: string) {
     <view class="page">
       <GuestNotice />
       <view class="row">
-        <view class="title compact-title">给开销一点计划</view>
+        <view class="title compact-title">预算管理</view>
         <picker mode="date" fields="month" :value="month" :disabled="busy || syncBusy" @change="changeMonth">
           <text class="badge">{{ month }} ▾</text>
         </picker>
       </view>
-      <view class="subtitle">{{ currentBookName }} · 每个月单独设置，留白表示不设限。</view>
+      <view class="muted small">{{ currentBookName }}</view>
       <view v-if="loadError" class="error">
         {{ loadError }}
         <button class="text-btn" :disabled="busy || syncBusy" @tap="load">重新加载预算</button>
@@ -181,7 +181,7 @@ function spent(name: string) {
         <button class="text-btn" :disabled="busy || syncBusy" @tap="load">重新加载最新预算</button>
       </view>
       <view v-if="!canManageBook" class="muted small">
-        共享预算由群主管理，所有成员的群组支出共同消耗预算。
+        仅群主可编辑
       </view>
       <view class="card">
         <view class="muted">{{ month }} 已支出</view>
@@ -196,17 +196,12 @@ function spent(name: string) {
             :style="{ width: progress.percent + '%' }"
           />
         </view>
-        <view v-if="pace.hasBudget" class="pace">
-          <view v-if="pace.phase === 'past'" class="muted small">该月份已结束，以上为已保存预算的最终余量。</view>
-          <template v-else>
-            <view class="row">
-              <text class="muted small">{{ pace.phase === 'future' ? '计划每日可用' : '剩余每日可用' }}</text>
-              <text class="income">¥ {{ money(pace.dailyAllowance || 0) }}</text>
-            </view>
-            <view class="muted small">
-              {{ pace.phase === 'future' ? '按整月' : '含今天剩余' }} {{ pace.daysRemaining }} 天均分已保存预算的余量，已计入该月全部账单。
-            </view>
-          </template>
+        <view v-if="pace.hasBudget && pace.phase !== 'past'" class="pace">
+          <view class="row">
+            <text class="muted small">{{ pace.phase === 'future' ? '计划每日可用' : '剩余每日可用' }}</text>
+            <text class="income">¥ {{ money(pace.dailyAllowance || 0) }}</text>
+          </view>
+          <view class="muted small">{{ pace.phase === 'future' ? '整月' : '剩余（含今天）' }} {{ pace.daysRemaining }} 天</view>
         </view>
         <view v-if="canManageBook" class="budget-tools">
           <button class="secondary" :disabled="!ready || busy || syncBusy" @tap="reusePrevious">沿用上月预算</button>
@@ -221,12 +216,11 @@ function spent(name: string) {
             type="digit"
             maxlength="11"
             :disabled="!canManageBook || !ready || busy || syncBusy"
-            placeholder="例如 3000.00"
+            placeholder="不设限"
           />
         </view>
       </view>
-      <view class="section">分类预算</view>
-      <view class="muted small">分类限额独立提醒，不自动分摊总预算。</view>
+      <view class="section">分类预算（元）</view>
       <view class="card">
         <view v-for="name in categories" :key="name" class="limit-row">
           <view>
@@ -273,7 +267,7 @@ function spent(name: string) {
   margin-top: 24rpx;
   padding: 20rpx;
   border-radius: 18rpx;
-  background: #f0f5eb;
+  background: #edf7f3;
 }
 .budget-tools {
   display: flex;

@@ -15,9 +15,6 @@ async function reconnect() {
   <view v-if="authStatus === 'checking' || authStatus === 'offline'" class="page">
     <view class="card">
       <view class="section">{{ authStatus === 'checking' ? '正在连接你的账本' : '暂时无法连接账本' }}</view>
-      <view class="muted">
-        {{ authStatus === 'checking' ? '正在恢复已保存的登录状态，请稍候。' : '登录状态已保留，请联网后重试，无需重新授权。' }}
-      </view>
       <view v-if="authStatus === 'offline' && authError" class="muted small notice">{{ authError }}</view>
       <button v-if="authStatus === 'offline'" class="secondary notice" @tap="reconnect">重新连接</button>
     </view>

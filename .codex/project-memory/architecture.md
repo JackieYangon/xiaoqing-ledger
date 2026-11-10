@@ -1,11 +1,12 @@
 # 架构与数据流
 
-核对日期：2026-11-02。以下为**代码已实现**，证据为所列源码，不表示线上部署或真机通过。核心架构最初记录于 2026-10-28；本次版本改动集中于本地配置、构建目录和发布准备。
+核对日期：2026-11-10。以下为**代码已实现**，证据为所列源码，不表示线上部署或真机通过。核心架构最初记录于 2026-10-28；本轮版本改动集中于小程序界面、预算用量展示和静态说明文案，不改变认证、云端协议及数据格式。
 
 ## 客户端与入口
 
 - 小程序：Vue 3、TypeScript、uni-app；src/main.ts 和 src/App.vue 处理启动及前台恢复认证，src/pages.json 声明页面和四个底部导航。src/pages/ 包括记账、明细、预算、统计、群组、资料、定期任务、备份及桌面登录确认。
-- src/core/ledger.ts 负责整数分金额、schema 1/2 兼容、校验、分类、预算、备份合并和统计；src/core/insights.ts 负责两端筛选、排序、预算复制草稿及同进度统计。
+- src/styles/theme.css 由 src/App.vue 引入，统一小程序主题、卡片、表单和账单列表样式；各页面保留局部布局。
+- src/core/ledger.ts 负责整数分金额、schema 1/2 兼容、校验、分类、预算、备份合并和统计；src/core/insights.ts 负责两端筛选、排序、预算复制草稿、同进度统计，以及供小程序使用的 budgetUsage 月度预算用量。budgetUsage 返回月度分组和限额、支出、剩余、超出、真实百分比及条形宽度，不修改输入数据。
 - src/services/ledger.ts 维护当前账号/账本状态、读写及切换；src/core/cloud-client.ts 处理 revision 分页、幂等请求、待确认写入及恢复。待确认存储键按环境、账号、群组隔离，退出不直接删除未确认写入。
 - src/services/guest-ledger.ts 用内存适配器构造示例账本，不访问旧数据，不随登录迁入正式账本。H5 为游客体验，条件编译禁用云端账号登录。
 - 桌面：desktop/ui/main.js 加载 App.vue，界面复用共同核心；desktop/main.cjs 创建 Electron 窗口及 HTTPS 请求，preload.cjs 仅暴露受限 IPC。启用 contextIsolation/sandbox，关闭 nodeIntegration，限制新窗口和导航。会话凭据在界面内存，待确认请求使用 localStorage。
@@ -30,7 +31,7 @@
 
 ## 配置与生成链
 
-- 应用版本唯一来源为根 package.json.version，当前为 1.0.4-r1。src/config/version.ts 用于界面；scripts/prepare-local-config.cjs 生成 manifest 版本名称及数字代码，r1 数字代码仍为 10004。云函数子包版本是独立元数据。
+- 应用版本唯一来源为根 package.json.version，当前为 1.0.5。src/config/version.ts 用于界面；scripts/prepare-local-config.cjs 生成 manifest 版本名称及数字代码，1.0.5 对应数字代码 10005。云函数子包版本是独立元数据。
 - 配置脚本接受 --mp-mode dev|build 和 --require-cloud。开发/生产命令传入对应模式；不指定模式时保留已知 dist/dev/mp-weixin/ 或 dist/build/mp-weixin/，否则取模板默认值。
 - AppID 优先级为进程 XQ_APP_ID、.env.local 中 XQ_APP_ID、本地项目既有 AppID；显式空值选择游客模式，touristappid 视为无正式 AppID。XQ_CLOUD_ENV 来自进程环境或 .env.local，单有 AppID 不会自动得到云环境。
 - 模板为 src/manifest.template.json 和 project.config.template.json。生成的 src/manifest.json、project.config.json、src/config/cloud.local.ts、cloudfunctions/ledger/local-config.json 均忽略提交。所有输入校验后才写入，内容不变则不重写；普通预览构建允许空部署配置。

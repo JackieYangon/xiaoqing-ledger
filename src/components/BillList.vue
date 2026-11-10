@@ -6,7 +6,7 @@ defineProps<{ items: Entry[]; hidden?: boolean }>()
 <template>
   <view>
     <view v-for="entry in items" :key="entry.id" class="bill" @tap="openEntry(entry.id)">
-      <view class="category-icon">{{ entry.category.slice(0, 1) }}</view>
+      <view class="category-icon" :class="{ 'income-icon': entry.kind === 'income' }">{{ entry.category.slice(0, 1) }}</view>
       <view class="bill-body">
         <view class="bill-name">{{ entry.category }}</view>
         <view v-if="entry.author" class="author">

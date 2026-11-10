@@ -123,19 +123,10 @@ function record(rule: any) {
           ? '后台最近检查：' +
             new Date(schedulerStatus.lastRun).toLocaleString() +
             (schedulerStatus.healthy ? '' : ' · 部分项目失败，请检查')
-          : '尚未检测到后台定时执行，请确认触发器已上传；可先点击下方手动校验。'
+          : '暂无后台执行记录'
       }}
     </view>
     <button class="secondary book" :disabled="busy" @tap="checkNow">立即校验到期项目</button>
-    <view class="card">
-      <view class="muted">
-        到期自动记一笔，不会实际扣款。手动记账时关联项目，该周期只保留一笔；自动生成后手动记同一项目，会更新原记录。
-      </view>
-      <view class="muted small notice">
-        按北京时间执行。每月 29–31
-        日遇短月份取月底；暂停再开启不补记暂停期间。删除关联账单后，该周期不会再自动生成。
-      </view>
-    </view>
     <view v-for="rule in rules" :key="rule.id" class="card">
       <view class="row">
         <text class="section heading">{{ rule.name }}</text>
@@ -184,7 +175,7 @@ function record(rule: any) {
         v-model="name"
         class="input book"
         maxlength="24"
-        placeholder="名称，例如：房租、会员订阅"
+        placeholder="项目名称"
       />
       <input v-model="amount" type="digit" class="input book" placeholder="每期金额（元）" />
       <picker :range="['每月', '每周']" @change="changeFrequency">
@@ -205,7 +196,6 @@ function record(rule: any) {
             {{ d }}
           </button>
         </view>
-        <view class="muted small notice">直接选择每月几号记账；29–31 日遇短月份按月底执行。</view>
       </view>
       <picker
         v-else
@@ -244,11 +234,11 @@ function record(rule: any) {
   line-height: 72rpx;
   height: 72rpx;
   border-radius: 14rpx;
-  background: #f1f5ee;
+  background: #f1f5f4;
   color: #3c5849;
 }
 .date-cell.selected {
-  background: #267858;
+  background: #16846b;
   color: white;
   font-weight: 700;
 }

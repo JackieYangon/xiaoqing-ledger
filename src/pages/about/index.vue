@@ -3,7 +3,7 @@ import SessionNotice from '@/components/SessionNotice.vue'
 import { APP_VERSION } from '@/config/version'
 import { useNavigationIcons } from '@/services/navigation'
 useNavigationIcons()
-import { browseReady, authenticated, currentUserLabel, logout, currentUser, ensureSession } from '@/services/auth'
+import { browseReady, authenticated, currentUserLabel, logout, currentUser, ensureSession, toLogin } from '@/services/auth'
 import GuestNotice from '@/components/GuestNotice.vue'
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
@@ -13,7 +13,6 @@ import {
   refresh,
   navigate,
   storageLabel,
-  cloudEnabled,
   currentBookId,
   currentBookName,
   groups,
@@ -26,6 +25,14 @@ const bookNames = computed(() => ['个人账本', ...groups.value.map((g) => g.n
 const bookIndex = computed(() =>
   Math.max(0, groups.value.findIndex((g) => g.id === currentBookId.value) + 1),
 )
+const menuItems = [
+  { page: 'groups', label: '群组与账本', icon: '群', tone: 'mint' },
+  { page: 'recurring', label: '定期记账', icon: '周', tone: 'blue' },
+  { page: 'sync', label: '云同步', icon: '云', tone: 'mint' },
+  { page: 'budget', label: '预算管理', icon: '¥', tone: 'sand' },
+  { page: 'categories', label: '分类管理', icon: '分', tone: 'blue' },
+  { page: 'backup', label: '数据与备份', icon: '备', tone: 'sand' },
+]
 onShow(async () => {
   try {
     if (await ensureSession()) await refreshWorkspace()
@@ -49,145 +56,71 @@ async function chooseBook(e: any) {
   <template v-if="browseReady">
     <view class="page">
       <GuestNotice />
-      <view class="brand" @tap="authenticated && navigate('profile')">
+      <view class="brand">
         <image class="logo" :src="currentUser?.avatar || '/static/avatar.png'" mode="aspectFill" />
-        <view>
+        <view class="profile-name">
           <view class="title">{{ currentUserLabel }}</view>
-          <view class="subtitle">{{ authenticated ? '选填头像与昵称 ›' : '先体验，再选择登录' }}</view>
+          <button v-if="authenticated" class="text-btn profile-action" @tap="navigate('profile')">编辑资料 ›</button>
+          <button v-else class="text-btn profile-action" @tap="toLogin">登录 ›</button>
         </view>
       </view>
-      <view class="card">
+      <view class="card account-card">
         <view class="row">
           <text class="section heading">{{ currentBookName }}</text>
           <text v-if="authenticated" class="badge" @tap="navigate('sync')">{{ storageLabel }} ›</text>
           <text v-else class="badge">{{ storageLabel }}</text>
         </view>
-        <picker v-if="authenticated" :range="bookNames" :value="bookIndex" @change="chooseBook">
-          <view class="secondary" style="padding: 20rpx; border-radius: 16rpx; margin: 12rpx 0">
-            切换账本：{{ currentBookName }} ▾
-          </view>
-        </picker>
         <view class="row counts">
           <view>
-            <text class="count">{{ entries.length }}</text>
-            <text class="muted">笔记录</text>
+            <view class="count">{{ entries.length }}</view>
+            <view class="muted small">账单笔数</view>
           </view>
           <view>
-            <text class="count">{{ days }}</text>
-            <text class="muted">天记账</text>
+            <view class="count">{{ days }}</view>
+            <view class="muted small">记账天数</view>
           </view>
         </view>
-        <view class="muted small">
-          {{
-            !authenticated
-              ? '示例账本可用于体验记账与预算。登录后会打开你的正式账本，体验记录不会自动导入。'
-              : cloudEnabled
-                ? '云端账本绑定当前账号，保存成功后换手机可读取。旧版本地记录请到云同步页面确认迁移。'
-                : '网页为独立本地预览。云端账本请在小青账本小程序中使用。'
-          }}
-        </view>
+        <picker v-if="authenticated" :range="bookNames" :value="bookIndex" @change="chooseBook">
+          <view class="book-picker">切换账本 <text>⌄</text></view>
+        </picker>
       </view>
       <view v-if="loadError" class="error">{{ loadError }}</view>
+      <view class="section">账本管理</view>
       <view class="card menu">
-        <view class="menu-row" @tap="navigate('groups')">
-          <view>
-            <view>群组与账本{{ authenticated ? '' : '（需登录）' }}</view>
-            <view class="muted small">邀请成员 · 共享预算 · 切换账本</view>
-          </view>
-          <text>›</text>
-        </view>
-        <view class="menu-row" @tap="navigate('recurring')">
-          <view>
-            <view>定期记账{{ authenticated ? '' : '（需登录）' }}</view>
-            <view class="muted small">每周 / 每月 · 关联项目防重复</view>
-          </view>
-          <text>›</text>
-        </view>
-        <view class="menu-row" @tap="navigate('sync')">
-          <view>
-            <view>云同步与迁移{{ authenticated ? '' : '（需登录）' }}</view>
-            <view class="muted small">同步状态 · 旧版账单迁移</view>
-          </view>
-          <text>›</text>
-        </view>
-        <view class="menu-row" @tap="navigate('budget')">
-          <view>
-            <view>预算管理</view>
-            <view class="muted small">月度总预算 · 分类限额</view>
-          </view>
-          <text>›</text>
-        </view>
-        <view class="menu-row" @tap="navigate('categories')">
-          <view>
-            <view>分类管理</view>
-            <view class="muted small">为你的生活添加专属分类</view>
-          </view>
-          <text>›</text>
-        </view>
-        <view class="menu-row" @tap="navigate('backup')">
-          <view>
-            <view>数据与备份{{ authenticated ? '' : '（需登录）' }}</view>
-            <view class="muted small">JSON 恢复 · CSV 导出</view>
-          </view>
-          <text>›</text>
+        <view v-for="item in menuItems" :key="item.page" class="menu-row" @tap="navigate(item.page)">
+          <view class="menu-icon" :class="item.tone">{{ item.icon }}</view>
+          <text class="menu-label">{{ item.label }}</text>
+          <text class="menu-arrow">›</text>
         </view>
       </view>
-      <view class="card">
-        <view class="section heading">关于小青</view>
-        <view class="muted">当前版本 {{ APP_VERSION }} · 收支筛选与预算规划</view>
-        <view class="divider" />
-        <view class="muted small">
-          快速记账、预算计划、收支日历与趋势统计。可先浏览并体验，登录后使用个人云端账本与群组服务。
-        </view>
-      </view>
-      <button v-if="authenticated" class="secondary" style="margin-top: 32rpx" @tap="logout">退出登录</button>
-      <view class="footer">小小的一笔，也是生活的印记。</view>
+      <button v-if="authenticated" class="secondary logout" @tap="logout">退出登录</button>
+      <view class="version">小青账本 · {{ APP_VERSION }}</view>
     </view>
   </template>
 </template>
 <style scoped>
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-  margin-bottom: 34rpx;
-}
-.logo {
-  width: 124rpx;
-  height: 124rpx;
-  border-radius: 30rpx;
-}
-.brand .title {
-  font-size: 42rpx;
-}
-.heading {
-  margin: 0 0 16rpx;
-}
-.counts {
-  margin: 10rpx 0 24rpx;
-}
-.count {
-  font-size: 52rpx;
-  font-weight: 600;
-}
-.menu {
-  padding-top: 8rpx;
-  padding-bottom: 8rpx;
-}
-.menu-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 26rpx 0;
-  border-bottom: 1rpx solid #edf1e9;
-}
-.menu-row:last-child {
-  border: 0;
-}
-.footer {
-  text-align: center;
-  color: #9ba79c;
-  font-size: 22rpx;
-  margin-top: 44rpx;
-}
+.brand { display: flex; align-items: center; gap: 24rpx; padding: 16rpx 4rpx 8rpx; }
+.logo { width: 116rpx; height: 116rpx; flex-shrink: 0; border: 6rpx solid #fff; border-radius: 38rpx; box-shadow: 0 6rpx 20rpx #173d3210; }
+.profile-name { min-width: 0; }
+.brand .title { margin: 0; font-size: 38rpx; overflow-wrap: anywhere; }
+.profile-action { padding: 4rpx 0 0; font-size: 24rpx; text-align: left; }
+.heading { margin: 0; font-size: 29rpx; }
+.account-card .row > .heading { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.account-card .badge { flex-shrink: 0; font-size: 21rpx; }
+.counts { justify-content: flex-start; gap: 0; margin: 28rpx 0 4rpx; }
+.counts > view { flex: 1; min-width: 0; }
+.counts > view + view { padding-left: 30rpx; border-left: 1rpx solid #edf1f0; }
+.count { margin-bottom: 4rpx; font-size: 50rpx; font-weight: 650; font-variant-numeric: tabular-nums; }
+.book-picker { display: flex; justify-content: space-between; align-items: center; margin-top: 24rpx; padding-top: 22rpx; border-top: 1rpx solid #edf1f0; color: #16846b; font-size: 25rpx; }
+.menu { margin-top: 0; padding: 4rpx 26rpx; }
+.menu-row { display: flex; align-items: center; gap: 20rpx; padding: 24rpx 0; border-bottom: 1rpx solid #edf1f0; }
+.menu-row:last-child { border: 0; }
+.menu-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 58rpx; width: 58rpx; height: 58rpx; border-radius: 18rpx; font-size: 25rpx; font-weight: 600; }
+.menu-label { flex: 1; font-size: 28rpx; }
+.menu-arrow { color: #a0afa8; font-size: 34rpx; }
+.mint { background: #e8f4ed; color: #378970; }
+.blue { background: #edf2fa; color: #6a88b6; }
+.sand { background: #fcf2e2; color: #b08c57; }
+.logout { margin-top: 28rpx; padding: 4rpx 0; }
+.version { margin-top: 32rpx; text-align: center; color: #8d9d95; font-size: 22rpx; }
 </style>

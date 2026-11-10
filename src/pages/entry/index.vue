@@ -208,7 +208,7 @@ function remove() {
       <GuestNotice />
       <view v-if="invalid" class="error">账单未能加载，请返回同步后重新打开。</view>
       <view class="row">
-        <view class="title compact">{{ id ? '编辑这一笔' : '记下生活的一笔' }}</view>
+        <view class="title compact">{{ id ? '编辑账单' : '记一笔' }}</view>
         <button v-if="id" class="text-btn" @tap="copy">再记一笔</button>
       </view>
       <view class="chips">
@@ -238,7 +238,7 @@ function remove() {
           <text class="label">选择分类</text>
           <button class="text-btn" @tap="navigate('categories')">管理 ›</button>
         </view>
-        <view v-if="!options.length" class="muted">暂无分类，请点击“管理”添加分类后记账。</view>
+        <view v-if="!options.length" class="muted">暂无分类</view>
         <scroll-view scroll-y class="category-scroll">
           <view class="category-grid">
             <view
@@ -265,7 +265,7 @@ function remove() {
           />
         </view>
         <view class="muted small">
-          支持加减计算 · 结果 {{ calculated === '—' ? '待输入' : '¥ ' + calculated }}
+          合计 {{ calculated === '—' ? '—' : '¥ ' + calculated }}
         </view>
         <view class="details">
           <picker mode="date" :value="date" @change="changeDate">
@@ -360,11 +360,11 @@ function remove() {
   height: 66rpx;
 }
 .selected {
-  background: #e7f0df;
-  color: #246342;
+  background: #e7f3ee;
+  color: #16846b;
 }
 .selected .category-icon {
-  background: #2e7957;
+  background: #16846b;
   color: white;
 }
 .amount-row {

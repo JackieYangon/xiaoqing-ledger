@@ -57,8 +57,7 @@ function edit(value: string) {
   <view v-if="browseReady" class="page">
     <GuestNotice />
     <view class="title">分类管理</view>
-    <view class="subtitle">所有分类均可重命名或删除，不区分默认与自定义。</view>
-    <view v-if="!canManageBook" class="muted book">群组分类由群主管理。</view>
+    <view v-if="!canManageBook" class="muted book">仅群主可编辑</view>
     <view class="chips book">
       <view class="chip" :class="{ active: kind === 'expense' }" @tap="kind = 'expense'">
         支出分类
@@ -71,10 +70,9 @@ function edit(value: string) {
       <text class="label">新增分类（1–12 个字）</text>
       <input v-model="name" class="input" maxlength="12" placeholder="输入分类名称" />
       <button class="primary book" :disabled="busy || syncBusy" @tap="add">添加分类</button>
-      <view class="muted small book">每种收支类型最多 50 个分类。</view>
     </view>
     <view class="card">
-      <view v-if="!items.length" class="empty">暂无分类，请先添加分类再记账。</view>
+      <view v-if="!items.length" class="empty">暂无分类</view>
       <view v-for="item in items" :key="item" class="row category-row">
         <text>{{ item }}</text>
         <view v-if="canManageBook" class="row">
